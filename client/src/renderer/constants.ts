@@ -37,8 +37,9 @@ export const TEAM_B_BORDER = '#f87171';
 // ========================
 export const S = {
   SPRITE:        0.80,  // character radius (half-size of drawn sprite)
+  CHAR_OFFSET_Y: -0.15, // character vertical offset (negative = up, in tile units)
   ITEM_PAD:      0.12,
-  BALLOON_PAD:   0.02,
+  BALLOON_PAD:   -0.1,
   BADGE_R:       0.16,
   BADGE_X:       0.33,
   BADGE_Y:       0.35,

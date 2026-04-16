@@ -263,9 +263,11 @@ function drawBlocks(ctx: CanvasRenderingContext2D, blocks: SnapshotPayload['bloc
       ctx.fillRect(b.x * tileSize + 2, b.y * tileSize + 2, tileSize - 4, 3);
       ctx.fillRect(b.x * tileSize + 2, b.y * tileSize + 2, 3, tileSize - 4);
     } else {
-      const bmp = getRaster('assets/images/blocks/softblock.svg', tileSize, tileSize);
+      const oversize = tileSize * 1;
+      const offset = (tileSize - oversize) / 2;
+      const bmp = getRaster('assets/images/blocks/softblock.svg', oversize, oversize);
       if (bmp) {
-        ctx.drawImage(bmp, b.x * tileSize, b.y * tileSize, tileSize, tileSize);
+        ctx.drawImage(bmp, b.x * tileSize + offset, b.y * tileSize + offset, oversize, oversize);
       } else {
         ctx.fillStyle = SOFT_FILL;
         ctx.fillRect(b.x * tileSize, b.y * tileSize, tileSize, tileSize);
@@ -482,7 +484,7 @@ function drawPlayers(
       const deadSrc = getCharSrc(skinName, dir, false, now, false);
       const bmpDead = getRaster(deadSrc, spriteSize, spriteSize);
       if (bmpDead) {
-        ctx.drawImage(bmpDead, cx - tileSize * S.SPRITE, cy - tileSize * S.SPRITE, spriteSize, spriteSize);
+        ctx.drawImage(bmpDead, cx - tileSize * S.SPRITE, cy - tileSize * S.SPRITE + tileSize * S.CHAR_OFFSET_Y, spriteSize, spriteSize);
       }
       ctx.globalAlpha = 1;
       ctx.strokeStyle = '#cc2222';
@@ -497,7 +499,7 @@ function drawPlayers(
       const charSrc = getCharSrc(skinName, dir, moving, now, p.state === 'Trapped');
       const charBmp = getRaster(charSrc, spriteSize, spriteSize);
       if (charBmp) {
-        ctx.drawImage(charBmp, cx - tileSize * S.SPRITE, cy - tileSize * S.SPRITE, spriteSize, spriteSize);
+        ctx.drawImage(charBmp, cx - tileSize * S.SPRITE, cy - tileSize * S.SPRITE + tileSize * S.CHAR_OFFSET_Y, spriteSize, spriteSize);
       } else {
         ctx.fillStyle = PLAYER_FALLBACK[colorIndex] ?? PLAYER_FALLBACK[0];
         ctx.beginPath();
