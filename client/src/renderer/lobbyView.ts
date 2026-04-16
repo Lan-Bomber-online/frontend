@@ -4,6 +4,11 @@ import type { DiscoveryRoomInfo, RendererElements } from './types';
 
 const RANK_MEDALS = ['🥇', '🥈', '🥉'];
 
+function charPreviewSrc(charFolder: string): string {
+  if (charFolder === 'Chiikawa') return 'assets/images/characters/Chiikawa/idle.svg';
+  return `assets/images/characters/${charFolder}/front/default.png`;
+}
+
 export function renderRoomState(
   el: RendererElements,
   roomState: RoomStatePayload | null,
@@ -180,7 +185,7 @@ function renderSlotOccupied(
 
   // Use server-provided skin (shared with all players)
   const charFolder = skin || color;
-  el.slotImgs[index].innerHTML = `<img src="assets/images/characters/${charFolder}/idle.svg" alt="${charFolder}" />`;
+  el.slotImgs[index].innerHTML = `<img src="${charPreviewSrc(charFolder)}" alt="${charFolder}" />`;
 
   // Player name
   el.slotNames[index].textContent = isMe ? `${name} (나)` : name;
@@ -322,7 +327,7 @@ export function renderResultScreen(
 
       const charImg = document.createElement('div');
       charImg.className = 'result-char-img';
-      charImg.innerHTML = `<img src="assets/images/characters/${charFolder}/idle.svg" alt="${charFolder}" />`;
+      charImg.innerHTML = `<img src="${charPreviewSrc(charFolder)}" alt="${charFolder}" />`;
 
       const nameEl = document.createElement('div');
       nameEl.className = 'result-name';
@@ -364,7 +369,7 @@ export function renderResultScreen(
 
         const charImg = document.createElement('div');
         charImg.className = 'result-char-img';
-        charImg.innerHTML = `<img src="assets/images/characters/${charFolder}/idle.svg" alt="${charFolder}" />`;
+        charImg.innerHTML = `<img src="${charPreviewSrc(charFolder)}" alt="${charFolder}" />`;
 
         const nameEl = document.createElement('div');
         nameEl.className = `result-name ${teamIdx === 0 ? 'team-a-name' : 'team-b-name'}`;
@@ -393,7 +398,7 @@ export function renderResultScreen(
 
       const charImg = document.createElement('div');
       charImg.className = 'result-char-img';
-      charImg.innerHTML = `<img src="assets/images/characters/${charFolder}/idle.svg" alt="${charFolder}" />`;
+      charImg.innerHTML = `<img src="${charPreviewSrc(charFolder)}" alt="${charFolder}" />`;
 
       const nameEl = document.createElement('div');
       nameEl.className = 'result-name';

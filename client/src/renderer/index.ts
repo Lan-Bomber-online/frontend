@@ -418,7 +418,9 @@ function openCharPicker(): void {
     const card = document.createElement('div');
     card.className = 'char-card' + (current === skin.id ? ' selected' : '');
     const img = document.createElement('img');
-    img.src = `assets/images/characters/${skin.id}/idle.svg`;
+    img.src = skin.id === 'Chiikawa'
+      ? `assets/images/characters/Chiikawa/idle.svg`
+      : `assets/images/characters/${skin.id}/front/default.png`;
     img.alt = skin.label;
     const nameEl = document.createElement('div');
     nameEl.className = 'char-card-name';

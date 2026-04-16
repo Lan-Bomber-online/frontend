@@ -60,15 +60,100 @@ function loadImg(src: string): HTMLImageElement {
   return img;
 }
 
-const ALL_SKINS = [...CHAR_COLORS, 'Chiikawa'];
+// ========================
+// Character animation state
+// ========================
+
+type CharDir = 'front' | 'back' | 'left' | 'right';
+
+/** Last known facing direction per player (persists between snapshots). */
+const playerDirCache = new Map<string, CharDir>();
+
+/** Walk frame alternation interval in ms. */
+const ANIM_FRAME_MS = 200;
+
+
+/**
+ * Derive facing direction and moving flag from position delta between snapshots.
+ * Falls back to the cached last-known direction when the player hasn't moved.
+ */
+function getCharAnimState(
+  playerId: string,
+  curr: SnapshotPayload,
+  prev: SnapshotPayload | null
+): { dir: CharDir; moving: boolean } {
+  const c = curr.players.find((p: PlayerSnapshot) => p.id === playerId);
+  if (!c) return { dir: playerDirCache.get(playerId) ?? 'front', moving: false };
+
+  let dir: CharDir = playerDirCache.get(playerId) ?? 'front';
+  let moving = false;
+
+  if (prev) {
+    const p = prev.players.find((p: PlayerSnapshot) => p.id === playerId);
+    if (p) {
+      const dx = c.x - p.x;
+      const dy = c.y - p.y;
+      if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) {
+        moving = true;
+        if (Math.abs(dx) >= Math.abs(dy)) {
+          dir = dx > 0 ? 'right' : 'left';
+        } else {
+          dir = dy > 0 ? 'front' : 'back';
+        }
+        playerDirCache.set(playerId, dir);
+      }
+    }
+  }
+
+  return { dir, moving };
+}
+
+/** Build the asset path for a character sprite. Chiikawa keeps its SVG layout. */
+function getCharSrc(skin: string, dir: CharDir, moving: boolean, now: number, trapped: boolean): string {
+  // Chiikawa uses separate SVG files
+  if (skin === 'Chiikawa') {
+    return trapped
+      ? 'assets/images/characters/Chiikawa/panic.svg'
+      : 'assets/images/characters/Chiikawa/idle.svg';
+  }
+
+  const base = `assets/images/characters/${skin}`;
+
+  if (trapped) {
+    return `${base}/panic.png`;
+  }
+
+  const frame = moving ? (Math.floor(now / ANIM_FRAME_MS) % 2 === 0 ? '1' : '2') : 'default';
+
+  switch (dir) {
+    case 'left':  return `${base}/side/left_${frame}.png`;
+    case 'right': return `${base}/side/right_${frame}.png`;
+    case 'back':  return `${base}/back/${frame}.png`;
+    default:      return `${base}/front/${frame}.png`;
+  }
+}
 
 export function preloadAssets() {
-  for (const skin of ALL_SKINS) {
-    loadImg(`assets/images/characters/${skin}/idle.svg`);
-    loadImg(`assets/images/characters/${skin}/panic.svg`);
+  for (const skin of CHAR_COLORS) {
+    const base = `assets/images/characters/${skin}`;
+    for (const d of ['front', 'back'] as const) {
+      loadImg(`${base}/${d}/default.png`);
+      loadImg(`${base}/${d}/1.png`);
+      loadImg(`${base}/${d}/2.png`);
+    }
+    for (const side of ['left', 'right'] as const) {
+      loadImg(`${base}/side/${side}_default.png`);
+      loadImg(`${base}/side/${side}_1.png`);
+      loadImg(`${base}/side/${side}_2.png`);
+    }
+    loadImg(`${base}/panic.png`);
   }
-  const waterballs = ['waterball', 'waterball_green', 'waterball_purple', 'waterball_red', 'waterball_pink', 'waterball_yellow', 'waterball_black'];
-  for (const w of waterballs) loadImg(`assets/images/waterball/${w}.svg`);
+  // Chiikawa (SVG only)
+  loadImg('assets/images/characters/Chiikawa/idle.svg');
+  loadImg('assets/images/characters/Chiikawa/panic.svg');
+
+  const waterballs = ['waterball', 'waterball_green', 'waterball_purple', 'waterball_red', 'waterball_white', 'waterball_yellow', 'waterball_black'];
+  for (const w of waterballs) loadImg(`assets/images/waterball/${w}.png`);
   loadImg('assets/images/item/item_balloon.svg');
   loadImg('assets/images/item/item_needle.svg');
   loadImg('assets/images/item/item_power.svg');
@@ -81,13 +166,14 @@ export function preloadAssets() {
   loadImg('assets/action/explode_effects/splahs_vertical.svg');
   loadImg('assets/images/boss/boss1.svg');
   loadImg('assets/images/boss/boss2.svg');
+  loadImg('assets/images/blocks/softblock.svg');
 }
 
 // ========================
 // Small helpers
 // ========================
 
-const WATERBALL_SVGS = ['waterball', 'waterball_green', 'waterball_purple', 'waterball_red', 'waterball_pink', 'waterball_yellow'];
+const WATERBALL_SVGS = ['waterball', 'waterball_green', 'waterball_purple', 'waterball_red', 'waterball_white', 'waterball_yellow'];
 
 // Maps skin folder name → waterball colorIndex (fallback to slot colorIndex if not found)
 const SKIN_TO_WATERBALL: Record<string, number> = {
@@ -95,7 +181,7 @@ const SKIN_TO_WATERBALL: Record<string, number> = {
 };
 
 function getWaterballSrc(colorIndex: number): string {
-  return `assets/images/waterball/${WATERBALL_SVGS[colorIndex] ?? 'waterball'}.svg`;
+  return `assets/images/waterball/${WATERBALL_SVGS[colorIndex] ?? 'waterball'}.png`;
 }
 
 function getWaterballSrcForPlayer(
@@ -103,7 +189,7 @@ function getWaterballSrcForPlayer(
   playerColors: Record<string, number>,
   playerSkins: Record<string, string>
 ): string {
-  if (ownerId === 'boss') return 'assets/images/waterball/waterball_black.svg';
+  if (ownerId === 'boss') return 'assets/images/waterball/waterball_black.png';
   const skin = playerSkins[ownerId] ?? '';
   const skinIdx = SKIN_TO_WATERBALL[skin];
   const colorIndex = skinIdx !== undefined ? skinIdx : (playerColors[ownerId] ?? 0);
@@ -177,18 +263,13 @@ function drawBlocks(ctx: CanvasRenderingContext2D, blocks: SnapshotPayload['bloc
       ctx.fillRect(b.x * tileSize + 2, b.y * tileSize + 2, tileSize - 4, 3);
       ctx.fillRect(b.x * tileSize + 2, b.y * tileSize + 2, 3, tileSize - 4);
     } else {
-      ctx.fillStyle = SOFT_FILL;
-      ctx.fillRect(b.x * tileSize, b.y * tileSize, tileSize, tileSize);
-      ctx.strokeStyle = SOFT_BORDER;
-      ctx.lineWidth = 1;
-      ctx.strokeRect(b.x * tileSize + 0.5, b.y * tileSize + 0.5, tileSize - 1, tileSize - 1);
-      ctx.strokeStyle = SOFT_CRATE;
-      const cx = b.x * tileSize + tileSize / 2;
-      const cy = b.y * tileSize + tileSize / 2;
-      const p = tileSize * 0.15;
-      ctx.strokeRect(b.x * tileSize + p, b.y * tileSize + p, tileSize - p * 2, tileSize - p * 2);
-      ctx.beginPath(); ctx.moveTo(cx, b.y * tileSize + p); ctx.lineTo(cx, b.y * tileSize + tileSize - p); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(b.x * tileSize + p, cy); ctx.lineTo(b.x * tileSize + tileSize - p, cy); ctx.stroke();
+      const bmp = getRaster('assets/images/blocks/softblock.svg', tileSize, tileSize);
+      if (bmp) {
+        ctx.drawImage(bmp, b.x * tileSize, b.y * tileSize, tileSize, tileSize);
+      } else {
+        ctx.fillStyle = SOFT_FILL;
+        ctx.fillRect(b.x * tileSize, b.y * tileSize, tileSize, tileSize);
+      }
     }
   }
 }
@@ -382,7 +463,8 @@ function drawPlayers(
   startGame: StartGamePayload,
   playerTeams: Record<string, number> | undefined,
   myId: string | null,
-  tick: number
+  tick: number,
+  now: number
 ): void {
   for (const p of players) {
     const pos = interpolatePlayerPos(p.id, currSnap, prevSnap, alpha);
@@ -393,9 +475,12 @@ function drawPlayers(
     const skinName = p.skin || colorName;
 
     const spriteSize = tileSize * S.SPRITE * 2;
+    const { dir, moving } = getCharAnimState(p.id, currSnap, prevSnap);
+
     if (p.state === 'Dead') {
       ctx.globalAlpha = 0.4;
-      const bmpDead = getRaster(`assets/images/characters/${skinName}/idle.svg`, spriteSize, spriteSize);
+      const deadSrc = getCharSrc(skinName, dir, false, now, false);
+      const bmpDead = getRaster(deadSrc, spriteSize, spriteSize);
       if (bmpDead) {
         ctx.drawImage(bmpDead, cx - tileSize * S.SPRITE, cy - tileSize * S.SPRITE, spriteSize, spriteSize);
       }
@@ -409,9 +494,7 @@ function drawPlayers(
       ctx.lineTo(cx - tileSize * 0.25, cy + tileSize * 0.25);
       ctx.stroke();
     } else {
-      const charSrc = p.state === 'Trapped'
-        ? `assets/images/characters/${skinName}/panic.svg`
-        : `assets/images/characters/${skinName}/idle.svg`;
+      const charSrc = getCharSrc(skinName, dir, moving, now, p.state === 'Trapped');
       const charBmp = getRaster(charSrc, spriteSize, spriteSize);
       if (charBmp) {
         ctx.drawImage(charBmp, cx - tileSize * S.SPRITE, cy - tileSize * S.SPRITE, spriteSize, spriteSize);
@@ -937,7 +1020,7 @@ export function drawGameFrame(opts: DrawOptions): void {
     drawBalloons(ctx, snapshotCurr.balloons, snapshotCurr.tick, tileSize, startGame.playerColors ?? {}, playerSkins, now, balloonKickAnims);
     const bossToDraw = boss ?? snapshotCurr.boss;
     if (bossToDraw) drawBoss(ctx, bossToDraw, tileSize, now);
-    drawPlayers(ctx, snapshotCurr.players, snapshotPrev, snapshotCurr, alpha, tileSize, startGame, playerTeams, myId, snapshotCurr.tick);
+    drawPlayers(ctx, snapshotCurr.players, snapshotPrev, snapshotCurr, alpha, tileSize, startGame, playerTeams, myId, snapshotCurr.tick, now);
   }
 
   ctx.restore();

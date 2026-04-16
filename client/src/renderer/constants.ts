@@ -36,9 +36,9 @@ export const TEAM_B_BORDER = '#f87171';
 // Sprite-size ratios (× tileSize)
 // ========================
 export const S = {
-  SPRITE:        0.45,  // character radius (half-size of drawn sprite)
+  SPRITE:        0.80,  // character radius (half-size of drawn sprite)
   ITEM_PAD:      0.12,
-  BALLOON_PAD:   0.05,
+  BALLOON_PAD:   0.02,
   BADGE_R:       0.16,
   BADGE_X:       0.33,
   BADGE_Y:       0.35,
