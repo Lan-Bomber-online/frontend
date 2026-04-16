@@ -39,9 +39,9 @@ import {
   type MapPreset,
   type XY,
   PROTOCOL_VERSION
-} from '@lan-bomber/shared';
-import { parseClientMessage } from '@lan-bomber/shared';
-import { RNG } from '@lan-bomber/shared';
+} from '../shared';
+import { parseClientMessage } from '../shared';
+import { RNG } from '../shared';
 import {
   canEnterTile as canEnterTileSystem,
   getPlayerOccupyTile as getPlayerOccupyTileSystem,
@@ -280,10 +280,10 @@ export class LanBomberServer {
     app.use(express.static(clientDist));
 
     // Serve assets folder
-    const assestsPath = path.resolve(__dirname, '../../../assests');
-    if (fs.existsSync(assestsPath)) {
-      app.use('/assests', express.static(assestsPath));
-      this.log.info(`Serving assets from ${assestsPath}`);
+    const assetsPath = path.resolve(__dirname, '../../../assets');
+    if (fs.existsSync(assetsPath)) {
+      app.use('/assets', express.static(assetsPath));
+      this.log.info(`Serving assets from ${assetsPath}`);
     }
 
     // HTTP API: room info for web-mode LAN discovery (including CORS preflight)

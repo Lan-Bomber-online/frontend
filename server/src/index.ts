@@ -1,4 +1,4 @@
-import { DEFAULT_UDP_ANNOUNCE_PORT, DEFAULT_WS_PORT, parseLogLevel } from '@lan-bomber/shared';
+import { DEFAULT_UDP_ANNOUNCE_PORT, DEFAULT_WS_PORT, parseLogLevel } from './shared';
 import { LanBomberServer } from './game/LanBomberServer';
 
 function getArg(name: string): string | undefined {

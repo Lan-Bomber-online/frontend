@@ -64,23 +64,23 @@ const ALL_SKINS = [...CHAR_COLORS, 'Chiikawa'];
 
 export function preloadAssets() {
   for (const skin of ALL_SKINS) {
-    loadImg(`assests/images/characters/${skin}/idle.svg`);
-    loadImg(`assests/images/characters/${skin}/panic.svg`);
+    loadImg(`assets/images/characters/${skin}/idle.svg`);
+    loadImg(`assets/images/characters/${skin}/panic.svg`);
   }
   const waterballs = ['waterball', 'waterball_green', 'waterball_purple', 'waterball_red', 'waterball_pink', 'waterball_yellow', 'waterball_black'];
-  for (const w of waterballs) loadImg(`assests/images/waterball/${w}.svg`);
-  loadImg('assests/images/item/item_balloon.svg');
-  loadImg('assests/images/item/item_needle.svg');
-  loadImg('assests/images/item/item_power.svg');
-  loadImg('assests/images/item/item_speed.svg');
-  loadImg('assests/images/item/item_glove.svg');
-  loadImg('assests/images/item/item_shield.svg');
-  loadImg('assests/images/item/item_switch.svg');
-  loadImg('assests/action/explode_effects/splash_center.svg');
-  loadImg('assests/action/explode_effects/splash_horizontal.svg');
-  loadImg('assests/action/explode_effects/splahs_vertical.svg');
-  loadImg('assests/images/boss/boss1.svg');
-  loadImg('assests/images/boss/boss2.svg');
+  for (const w of waterballs) loadImg(`assets/images/waterball/${w}.svg`);
+  loadImg('assets/images/item/item_balloon.svg');
+  loadImg('assets/images/item/item_needle.svg');
+  loadImg('assets/images/item/item_power.svg');
+  loadImg('assets/images/item/item_speed.svg');
+  loadImg('assets/images/item/item_glove.svg');
+  loadImg('assets/images/item/item_shield.svg');
+  loadImg('assets/images/item/item_switch.svg');
+  loadImg('assets/action/explode_effects/splash_center.svg');
+  loadImg('assets/action/explode_effects/splash_horizontal.svg');
+  loadImg('assets/action/explode_effects/splahs_vertical.svg');
+  loadImg('assets/images/boss/boss1.svg');
+  loadImg('assets/images/boss/boss2.svg');
 }
 
 // ========================
@@ -95,7 +95,7 @@ const SKIN_TO_WATERBALL: Record<string, number> = {
 };
 
 function getWaterballSrc(colorIndex: number): string {
-  return `assests/images/waterball/${WATERBALL_SVGS[colorIndex] ?? 'waterball'}.svg`;
+  return `assets/images/waterball/${WATERBALL_SVGS[colorIndex] ?? 'waterball'}.svg`;
 }
 
 function getWaterballSrcForPlayer(
@@ -103,7 +103,7 @@ function getWaterballSrcForPlayer(
   playerColors: Record<string, number>,
   playerSkins: Record<string, string>
 ): string {
-  if (ownerId === 'boss') return 'assests/images/waterball/waterball_black.svg';
+  if (ownerId === 'boss') return 'assets/images/waterball/waterball_black.svg';
   const skin = playerSkins[ownerId] ?? '';
   const skinIdx = SKIN_TO_WATERBALL[skin];
   const colorIndex = skinIdx !== undefined ? skinIdx : (playerColors[ownerId] ?? 0);
@@ -112,13 +112,14 @@ function getWaterballSrcForPlayer(
 
 function getItemSrc(type: ItemType): string {
   switch (type) {
-    case 'Speed':   return 'assests/images/item/item_speed.svg';
-    case 'Balloon': return 'assests/images/item/item_balloon.svg';
-    case 'Power':   return 'assests/images/item/item_power.svg';
-    case 'Needle':  return 'assests/images/item/item_needle.svg';
-    case 'Glove':   return 'assests/images/item/item_glove.svg';
-    case 'Shield':  return 'assests/images/item/item_shield.svg';
-    case 'Switch':  return 'assests/images/item/item_switch.svg';
+    case 'Speed':   return 'assets/images/item/item_speed.svg';
+    case 'Balloon': return 'assets/images/item/item_balloon.svg';
+    case 'Power':   return 'assets/images/item/item_power.svg';
+    case 'Needle':  return 'assets/images/item/item_needle.svg';
+    case 'Glove':   return 'assets/images/item/item_glove.svg';
+    case 'Shield':  return 'assets/images/item/item_shield.svg';
+    case 'Switch':  return 'assets/images/item/item_switch.svg';
+    default:        return 'assets/images/item/item_balloon.svg';
   }
 }
 
@@ -138,10 +139,10 @@ function interpolatePlayerPos(
   prev: SnapshotPayload | null,
   alpha: number
 ): { x: number; y: number } {
-  const c = curr.players.find(p => p.id === playerId);
+  const c = curr.players.find((p: PlayerSnapshot) => p.id === playerId);
   if (!c) return { x: 0, y: 0 };
   if (!prev) return { x: c.x, y: c.y };
-  const p = prev.players.find(p => p.id === playerId);
+  const p = prev.players.find((p: PlayerSnapshot) => p.id === playerId);
   if (!p) return { x: c.x, y: c.y };
   return { x: p.x + (c.x - p.x) * alpha, y: p.y + (c.y - p.y) * alpha };
 }
@@ -210,9 +211,9 @@ function drawItems(ctx: CanvasRenderingContext2D, items: SnapshotPayload['items'
 }
 
 function drawExplosions(ctx: CanvasRenderingContext2D, explosions: SnapshotPayload['explosions'], tileSize: number): void {
-  const centerSrc     = 'assests/action/explode_effects/splash_center.svg';
-  const horizontalSrc = 'assests/action/explode_effects/splash_horizontal.svg';
-  const verticalSrc   = 'assests/action/explode_effects/splahs_vertical.svg';
+  const centerSrc     = 'assets/action/explode_effects/splash_center.svg';
+  const horizontalSrc = 'assets/action/explode_effects/splash_horizontal.svg';
+  const verticalSrc   = 'assets/action/explode_effects/splahs_vertical.svg';
   const dirs = ['right', 'down', 'left', 'up'] as const;
 
   // horizontal SVG 40×28, vertical SVG 28×40 — preserve natural aspect ratio, center on tile
@@ -394,7 +395,7 @@ function drawPlayers(
     const spriteSize = tileSize * S.SPRITE * 2;
     if (p.state === 'Dead') {
       ctx.globalAlpha = 0.4;
-      const bmpDead = getRaster(`assests/images/characters/${skinName}/idle.svg`, spriteSize, spriteSize);
+      const bmpDead = getRaster(`assets/images/characters/${skinName}/idle.svg`, spriteSize, spriteSize);
       if (bmpDead) {
         ctx.drawImage(bmpDead, cx - tileSize * S.SPRITE, cy - tileSize * S.SPRITE, spriteSize, spriteSize);
       }
@@ -409,8 +410,8 @@ function drawPlayers(
       ctx.stroke();
     } else {
       const charSrc = p.state === 'Trapped'
-        ? `assests/images/characters/${skinName}/panic.svg`
-        : `assests/images/characters/${skinName}/idle.svg`;
+        ? `assets/images/characters/${skinName}/panic.svg`
+        : `assets/images/characters/${skinName}/idle.svg`;
       const charBmp = getRaster(charSrc, spriteSize, spriteSize);
       if (charBmp) {
         ctx.drawImage(charBmp, cx - tileSize * S.SPRITE, cy - tileSize * S.SPRITE, spriteSize, spriteSize);
@@ -566,7 +567,7 @@ function drawBoss(
   now: number
 ): void {
   const skinName = boss.skin ?? 'boss1';
-  const bossSrc = `assests/images/boss/${skinName}.svg`;
+  const bossSrc = `assets/images/boss/${skinName}.svg`;
   // Footprint: 2×2 tiles at (boss.x, boss.y)
   // Draw visually larger: 6 tiles wide × 5.5 tiles tall, bottom-aligned, centered
   const footprintCenterX = (boss.x + 1) * tileSize;
@@ -659,8 +660,8 @@ function drawBossLasers(
   tileSize: number,
   now: number
 ): void {
-  const horizontalSrc = 'assests/action/explode_effects/splash_horizontal.svg';
-  const verticalSrc   = 'assests/action/explode_effects/splahs_vertical.svg';
+  const horizontalSrc = 'assets/action/explode_effects/splash_horizontal.svg';
+  const verticalSrc   = 'assets/action/explode_effects/splahs_vertical.svg';
 
   // Match drawExplosions sizing: horizontal SVG 40×28, vertical SVG 28×40
   const short    = tileSize * (28 / 40);
@@ -753,7 +754,7 @@ function updateHUD(
   // Top bar (changes at most every snapshot, ~20Hz)
   let topText: string;
   if (startGame.mode === 'BOSS') {
-    const alive = snap.players.filter(p => p.state !== 'Dead').length;
+    const alive = snap.players.filter((p: PlayerSnapshot) => p.state !== 'Dead').length;
     const boss = snap.boss;
     topText = `보스전 · 생존: ${alive}/${snap.players.length}` + (boss ? `  👾 HP:${boss.hp}/${boss.maxHp} Phase${boss.phase}` : '');
   } else if (startGame.mode === 'TEAM' && playerTeams) {
@@ -770,7 +771,7 @@ function updateHUD(
   if (topText !== _hudTopText) { _hudTopText = topText; el.hudTop.textContent = topText; }
 
   // 5-slot inventory — only rebuild HTML when inventory state changes
-  const me = snap.players.find(p => p.id === myId);
+  const me = snap.players.find((p: PlayerSnapshot) => p.id === myId);
   if (me && me.state !== 'Dead') {
     const inv = (me as any).inventory as ItemType[] | undefined ?? [];
     const newKey = inv.join(',') + '|' + String((me as any).hasGlove ?? false);
@@ -816,7 +817,7 @@ export function updatePlayerStatusPanel(
   }
 
   // Build compact state key — only player states change during a game
-  const newKey = snap.players.map(p => p.id[0] + p.state[0]).join('');
+  const newKey = snap.players.map((p: PlayerSnapshot) => p.id[0] + p.state[0]).join('');
   if (newKey === _playerStatusKey) return;
   _playerStatusKey = newKey;
 
@@ -824,8 +825,8 @@ export function updatePlayerStatusPanel(
   const groups: Array<{ header?: string; headerColor?: string; players: typeof snap.players }> = [];
 
   if (isTeam) {
-    const teamA = snap.players.filter(p => (playerTeams![p.id] ?? 0) === 0);
-    const teamB = snap.players.filter(p => (playerTeams![p.id] ?? 0) === 1);
+    const teamA = snap.players.filter((p: PlayerSnapshot) => (playerTeams![p.id] ?? 0) === 0);
+    const teamB = snap.players.filter((p: PlayerSnapshot) => (playerTeams![p.id] ?? 0) === 1);
     groups.push({ header: 'A팀', headerColor: TEAM_A_COLOR, players: teamA });
     groups.push({ header: 'B팀', headerColor: TEAM_B_COLOR, players: teamB });
   } else {

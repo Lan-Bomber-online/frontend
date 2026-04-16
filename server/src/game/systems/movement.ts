@@ -1,4 +1,4 @@
-import { TICK_RATE, type MoveDir } from '@lan-bomber/shared';
+import { TICK_RATE, type MoveDir } from '../../shared';
 
 export type Tile = 'SolidWall' | 'SoftBlock' | 'Empty';
 

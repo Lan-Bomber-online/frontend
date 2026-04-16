@@ -7,7 +7,7 @@ import {
   type MoveDir,
   type PlayerLifeState,
   type XY
-} from '@lan-bomber/shared';
+} from '../../shared';
 import type { Tile } from './movement';
 
 // ========================

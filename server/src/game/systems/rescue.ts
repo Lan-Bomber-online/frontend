@@ -1,4 +1,4 @@
-import { RESCUE_INVULN_TICKS, type GameEventType, type MoveDir, type PlayerLifeState } from '@lan-bomber/shared';
+import { RESCUE_INVULN_TICKS, type GameEventType, type MoveDir, type PlayerLifeState } from '../../shared';
 import type { MoveStateLike } from './movement';
 
 export interface PlayerLikeForRescue {

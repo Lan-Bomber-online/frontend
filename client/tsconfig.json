@@ -10,7 +10,11 @@
     "forceConsistentCasingInFileNames": true,
     "lib": ["ES2020", "DOM"],
     "types": ["node"],
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@lan-bomber/shared": ["../shared/src/index.ts"]
+    },
+    "resolveJsonModule": true
   },
-  "include": ["src/renderer/**/*", "src/renderer/globals.d.ts", "scripts/**/*"]
+  "include": ["src/renderer/**/*", "src/renderer/globals.d.ts", "scripts/**/*", "../shared/src/**/*"]
 }

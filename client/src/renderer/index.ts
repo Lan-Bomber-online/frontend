@@ -10,7 +10,8 @@ import {
   type ClientToServerMessage,
   type EventMessagePayload,
   type GameMode,
-  type SnapshotPayload
+  type SnapshotPayload,
+  type RoomPlayerInfo
 } from '@lan-bomber/shared';
 import { getRendererElements, setScreen } from './dom';
 import { drawGameFrame, preloadAssets } from './gameView';
@@ -108,7 +109,7 @@ function onEvent(ev: EventMessagePayload, gs: GameState): void {
     if (ev.payload.mode === 'BOSS') {
       endMsg = ev.payload.victory ? '보스 격파! 🎉' : '게임 오버';
     } else if (ev.payload.mode === 'TEAM') {
-      const myTeam = gs.roomState?.players.find(p => p.id === gs.myId)?.team;
+      const myTeam = gs.roomState?.players.find((p: RoomPlayerInfo) => p.id === gs.myId)?.team;
       endMsg = myTeam !== undefined && myTeam === ev.payload.winnerTeam ? '승리! 🎉' : '패배...';
     } else {
       endMsg = ev.payload.winnerId === gs.myId ? '우승! 🎉' : '게임 종료';
@@ -161,7 +162,7 @@ function onEvent(ev: EventMessagePayload, gs: GameState): void {
 
   if (ev.type === 'PlayerDied') {
     const playerId: string = ev.payload.playerId ?? '';
-    const player = gs.roomState?.players.find(p => p.id === playerId);
+    const player = gs.roomState?.players.find((p: RoomPlayerInfo) => p.id === playerId);
     if (player) {
       addSystemMessage(el, `${player.name} 탈락!`);
       pushNotification(gs, `💀 ${player.name} 탈락!`);
@@ -171,8 +172,8 @@ function onEvent(ev: EventMessagePayload, gs: GameState): void {
   if (ev.type === 'PlayerRescued') {
     const rescuedId: string = ev.payload.playerId ?? '';
     const rescuerId: string = ev.payload.byPlayerId ?? '';
-    const rescued = gs.roomState?.players.find(p => p.id === rescuedId);
-    const rescuer = gs.roomState?.players.find(p => p.id === rescuerId);
+    const rescued = gs.roomState?.players.find((p: RoomPlayerInfo) => p.id === rescuedId);
+    const rescuer = gs.roomState?.players.find((p: RoomPlayerInfo) => p.id === rescuerId);
     if (rescued && rescuer) {
       if (rescuedId !== rescuerId) {
         addSystemMessage(el, `${rescuer.name}가 ${rescued.name}를 구출했습니다!`);
@@ -417,7 +418,7 @@ function openCharPicker(): void {
     const card = document.createElement('div');
     card.className = 'char-card' + (current === skin.id ? ' selected' : '');
     const img = document.createElement('img');
-    img.src = `assests/images/characters/${skin.id}/idle.svg`;
+    img.src = `assets/images/characters/${skin.id}/idle.svg`;
     img.alt = skin.label;
     const nameEl = document.createElement('div');
     nameEl.className = 'char-card-name';
@@ -540,7 +541,7 @@ function bindRoomScreen(): void {
   };
 
   el.btnSwitchTeam.onclick = () => {
-    const myPlayer = state.myId ? state.roomState?.players.find(p => p.id === state.myId) : null;
+    const myPlayer = state.myId ? state.roomState?.players.find((p: RoomPlayerInfo) => p.id === state.myId) : null;
     if (!myPlayer) return;
     send({ type: 'SetTeam', payload: { team: myPlayer.team === 0 ? 1 : 0 } });
   };

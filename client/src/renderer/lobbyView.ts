@@ -1,4 +1,4 @@
-import type { ClientToServerMessage, RoomStatePayload } from '@lan-bomber/shared';
+import type { ClientToServerMessage, RoomPlayerInfo, RoomStatePayload } from '@lan-bomber/shared';
 import { CHAR_COLORS } from '@lan-bomber/shared';
 import type { DiscoveryRoomInfo, RendererElements } from './types';
 
@@ -34,8 +34,8 @@ export function renderRoomState(
   el.roomTitle.textContent = roomName || '방';
 
   // Count players per team for TEAM mode
-  const teamACnt = state.players.filter(p => p.team === 0).length;
-  const teamBCnt = state.players.filter(p => p.team === 1).length;
+  const teamACnt = state.players.filter((p: RoomPlayerInfo) => p.team === 0).length;
+  const teamBCnt = state.players.filter((p: RoomPlayerInfo) => p.team === 1).length;
 
   // Render player slots — layout differs by mode
   const slotsGrid = el.playerSlots[0].parentElement as HTMLElement;
@@ -62,7 +62,7 @@ export function renderRoomState(
     );
 
     // Fill A팀 players into slots 0-2
-    const teamAPlayers = state.players.filter(p => p.team === 0);
+    const teamAPlayers = state.players.filter((p: RoomPlayerInfo) => p.team === 0);
     for (let i = 0; i < 3; i++) {
       const p = teamAPlayers[i];
       if (p) renderSlotOccupied(el, i, p.name, p.colorIndex, p.skin ?? '', p.id === myId, p.id === state.hostId, !!state.readyStates[p.id], true, 0);
@@ -70,7 +70,7 @@ export function renderRoomState(
     }
 
     // Fill B팀 players into slots 3-5
-    const teamBPlayers = state.players.filter(p => p.team === 1);
+    const teamBPlayers = state.players.filter((p: RoomPlayerInfo) => p.team === 1);
     for (let i = 0; i < 3; i++) {
       const p = teamBPlayers[i];
       if (p) renderSlotOccupied(el, i + 3, p.name, p.colorIndex, p.skin ?? '', p.id === myId, p.id === state.hostId, !!state.readyStates[p.id], true, 1);
@@ -128,7 +128,7 @@ export function renderRoomState(
     }
 
     // Disable switch if target team is full (3 players max per team)
-    const myPlayer = myId ? state.players.find(p => p.id === myId) : null;
+    const myPlayer = myId ? state.players.find((p: RoomPlayerInfo) => p.id === myId) : null;
     if (myPlayer) {
       const targetTeam = myPlayer.team === 0 ? 1 : 0;
       const targetCount = targetTeam === 0 ? teamACnt : teamBCnt;
@@ -143,7 +143,7 @@ export function renderRoomState(
   }
 
   // Start button: host only, all ready; BOSS mode allows 1 player
-  const allReady = state.players.length > 0 && state.players.every((p) => state.readyStates[p.id]);
+  const allReady = state.players.length > 0 && state.players.every((p: RoomPlayerInfo) => state.readyStates[p.id]);
   const enoughPlayers = isBossMode ? state.players.length >= 1 : state.players.length >= 2;
   el.btnStart.disabled = !(isHost && allReady && enoughPlayers);
 }
@@ -180,7 +180,7 @@ function renderSlotOccupied(
 
   // Use server-provided skin (shared with all players)
   const charFolder = skin || color;
-  el.slotImgs[index].innerHTML = `<img src="assests/images/characters/${charFolder}/idle.svg" alt="${charFolder}" />`;
+  el.slotImgs[index].innerHTML = `<img src="assets/images/characters/${charFolder}/idle.svg" alt="${charFolder}" />`;
 
   // Player name
   el.slotNames[index].textContent = isMe ? `${name} (나)` : name;
@@ -322,7 +322,7 @@ export function renderResultScreen(
 
       const charImg = document.createElement('div');
       charImg.className = 'result-char-img';
-      charImg.innerHTML = `<img src="assests/images/characters/${charFolder}/idle.svg" alt="${charFolder}" />`;
+      charImg.innerHTML = `<img src="assets/images/characters/${charFolder}/idle.svg" alt="${charFolder}" />`;
 
       const nameEl = document.createElement('div');
       nameEl.className = 'result-name';
@@ -364,7 +364,7 @@ export function renderResultScreen(
 
         const charImg = document.createElement('div');
         charImg.className = 'result-char-img';
-        charImg.innerHTML = `<img src="assests/images/characters/${charFolder}/idle.svg" alt="${charFolder}" />`;
+        charImg.innerHTML = `<img src="assets/images/characters/${charFolder}/idle.svg" alt="${charFolder}" />`;
 
         const nameEl = document.createElement('div');
         nameEl.className = `result-name ${teamIdx === 0 ? 'team-a-name' : 'team-b-name'}`;
@@ -393,7 +393,7 @@ export function renderResultScreen(
 
       const charImg = document.createElement('div');
       charImg.className = 'result-char-img';
-      charImg.innerHTML = `<img src="assests/images/characters/${charFolder}/idle.svg" alt="${charFolder}" />`;
+      charImg.innerHTML = `<img src="assets/images/characters/${charFolder}/idle.svg" alt="${charFolder}" />`;
 
       const nameEl = document.createElement('div');
       nameEl.className = 'result-name';

@@ -1,4 +1,4 @@
-import type { ItemType } from '@lan-bomber/shared';
+import type { ItemType } from '../../shared';
 
 function clamp(n: number, a: number, b: number): number {
   return Math.max(a, Math.min(b, n));
