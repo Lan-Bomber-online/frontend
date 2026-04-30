@@ -1,7 +1,7 @@
 import { api } from '../api/client.js';
 import { optional } from '../core/dom.js';
 import { accessStatus, state } from '../core/state.js';
-import { leaveGameView, loadRooms, stopRoomRefresh } from '../rooms/roomsApi.js';
+import { leaveGameView, loadRoom, loadRooms, savedRoomId, stopRoomRefresh } from '../rooms/roomsApi.js';
 import { refreshNavigationState, setStatusPill, showView } from '../ui/navigation.js';
 import { showError } from '../ui/status.js';
 
@@ -151,6 +151,16 @@ async function verifyPendingAccessCode() {
 export async function routeAfterAccountStep() {
   const status = accessStatus();
   if (status === 'approved') {
+    const roomId = savedRoomId();
+    if (roomId) {
+      try {
+        await loadRoom(roomId);
+        showView(state.currentRoom?.status === 'playing' ? 'gameView' : 'roomView');
+        return;
+      } catch {
+        localStorage.removeItem('lanBomberCurrentRoomId');
+      }
+    }
     await loadRooms();
     showView('lobbyView');
     return;

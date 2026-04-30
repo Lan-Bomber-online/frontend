@@ -2,6 +2,7 @@ import { accessStatus, state } from './core/state.js';
 import { bindAuthActions, handleGoogleRedirect, loadMe, routeAfterAccountStep, setPendingAccessCode } from './auth/authFlow.js';
 import { renderMapOptions } from './game/mapPicker.js';
 import { bindProfileActions, renderSkins } from './profile/profileView.js';
+import { bindRankingsActions } from './rankings/rankingsView.js';
 import { bindRoomActions, loadRooms, renderRooms } from './rooms/roomsApi.js';
 import { renderPlayerSlots } from './rooms/roomSlots.js';
 import { bindStepNavigation, refreshNavigationState, showView } from './ui/navigation.js';
@@ -17,6 +18,7 @@ export function init() {
   bindStepNavigation();
   bindAuthActions();
   bindProfileActions();
+  bindRankingsActions();
   bindRoomActions();
 
   refreshBackendStatus({ loader: true });

@@ -22,6 +22,9 @@ export function showView(viewId) {
   $('#pageSubtitle').textContent = meta.subtitle;
   $('#statusPill').textContent = meta.status;
   if (viewId === 'gameView') schedulePreviewBoardDraw();
+  if (viewId === 'rankingsView') {
+    import('../rankings/rankingsView.js').then(({ loadRankings }) => loadRankings({ silent: true }));
+  }
 }
 
 export function guardView(viewId) {
@@ -32,6 +35,9 @@ export function guardView(viewId) {
   if (status === 'profile_required') return viewId === 'profileView' ? viewId : 'profileView';
   if (status === 'access_code_required') return viewId === 'profileView' || viewId === 'codeView' ? viewId : 'codeView';
   if (status !== 'approved') return 'authView';
+  if (state.currentRoom && viewId !== 'roomView' && viewId !== 'gameView') {
+    return state.currentRoom.status === 'playing' || state.gameState ? 'gameView' : 'roomView';
+  }
   if (viewId === 'roomView' && !state.currentRoom) return 'lobbyView';
   if (viewId === 'gameView' && !state.currentRoom && !state.gameState) return 'lobbyView';
   return viewId;
@@ -45,7 +51,11 @@ export function refreshNavigationState() {
     if (target === 'authView') enabled = true;
     else if (state.user && status === 'profile_required') enabled = target === 'profileView';
     else if (state.user && status === 'access_code_required') enabled = target === 'profileView' || target === 'codeView';
-    else if (state.user && status === 'approved') enabled = true;
+    else if (state.user && status === 'approved') {
+      enabled = state.currentRoom
+        ? target === 'roomView'
+        : target !== 'roomView' && target !== 'gameView';
+    }
 
     step.disabled = !enabled;
     step.classList.toggle('locked', !enabled);

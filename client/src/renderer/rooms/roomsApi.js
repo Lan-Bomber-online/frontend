@@ -2,13 +2,26 @@ import { api } from '../api/client.js';
 import { state } from '../core/state.js';
 import { startGameSession, stopGameSession } from '../game/gameSession.js';
 import { drawPreviewBoard, schedulePreviewBoardDraw } from '../game/previewBoard.js';
-import { showView } from '../ui/navigation.js';
+import { refreshNavigationState, showView } from '../ui/navigation.js';
 import { showError } from '../ui/status.js';
 import { renderPlayerSlots } from './roomSlots.js';
 
 const ROOM_REFRESH_MS = 500;
+const CURRENT_ROOM_STORAGE_KEY = 'lanBomberCurrentRoomId';
 
 let roomRefreshTimer = null;
+
+export function savedRoomId() {
+  return Number(localStorage.getItem(CURRENT_ROOM_STORAGE_KEY) || 0) || null;
+}
+
+function rememberRoom(roomId) {
+  if (roomId) localStorage.setItem(CURRENT_ROOM_STORAGE_KEY, String(roomId));
+}
+
+function forgetRoom() {
+  localStorage.removeItem(CURRENT_ROOM_STORAGE_KEY);
+}
 
 export function stopRoomRefresh() {
   if (roomRefreshTimer) {
@@ -82,12 +95,17 @@ export async function loadRooms(options = {}) {
 }
 
 export async function loadRoom(roomId, options = {}) {
+  rememberRoom(roomId);
   const previousMapId = state.mapId;
   state.currentRoom = await api(`/api/rooms/${roomId}`, {
     loader: !options.silent,
     loaderText: 'Loading room'
   });
   if (state.currentRoom.mapId) state.mapId = state.currentRoom.mapId;
+  if (state.currentRoom.gameMode) state.gameMode = state.currentRoom.gameMode;
+  if (state.currentRoom.gameDurationSeconds) {
+    state.gameDurationSeconds = state.currentRoom.gameDurationSeconds;
+  }
   state.ready = !!state.currentRoom.players?.find((p) => p.userId === state.user?.userId)?.isReady;
 
   const isParticipant = !!state.currentRoom.players?.find((p) => p.userId === state.user?.userId);
@@ -95,7 +113,9 @@ export async function loadRoom(roomId, options = {}) {
     stopRoomRefresh();
     state.currentRoom = null;
     state.ready = false;
+    forgetRoom();
     await loadRooms({ silent: true });
+    refreshNavigationState();
     showView('lobbyView');
     return;
   }
@@ -108,12 +128,13 @@ export async function loadRoom(roomId, options = {}) {
 
   syncRoomSettingsControls(previousMapId);
   renderPlayerSlots();
+  refreshNavigationState();
   if (options.startRefresh !== false) startRoomRefresh(roomId);
 
-  if (state.currentView === 'roomView' && state.currentRoom.status === 'playing') {
+  if (state.currentRoom.status === 'playing' && state.currentView !== 'gameView') {
     stopRoomRefresh();
     showView('gameView');
-    startGameSession(state.currentRoom.roomId);
+    await startGameSession(state.currentRoom.roomId);
     schedulePreviewBoardDraw();
   }
 }
@@ -124,8 +145,36 @@ function syncRoomSettingsControls(previousMapId = state.mapId) {
     select.value = state.mapId;
     select.disabled = state.currentView === 'roomView' && !isHost;
   });
+  const durationSelect = document.querySelector('#gameDurationSelect');
+  if (durationSelect) {
+    durationSelect.value = String(state.currentRoom?.gameDurationSeconds || state.gameDurationSeconds || 180);
+    durationSelect.disabled = state.currentView === 'roomView' && !isHost;
+  }
+  const modeSelect = document.querySelector('#gameModeSelect');
+  if (modeSelect) {
+    modeSelect.value = state.currentRoom?.gameMode || state.gameMode || 'FFA';
+    modeSelect.disabled = state.currentView === 'roomView' && !isHost;
+  }
+  syncTeamControls();
   if (state.currentView === 'gameView') schedulePreviewBoardDraw();
   else if (previousMapId !== state.mapId) drawPreviewBoard();
+}
+
+function syncTeamControls() {
+  const actions = document.querySelector('#teamActions');
+  const countText = document.querySelector('#teamCountText');
+  const shuffleButton = document.querySelector('#btnShuffleTeams');
+  const players = state.currentRoom?.players || [];
+  const isTeamMode = state.currentRoom?.gameMode === 'TEAM';
+  const isHost = state.currentRoom?.hostUserId === state.user?.userId;
+  actions?.classList.toggle('hidden', !isTeamMode);
+  if (!isTeamMode) return;
+
+  const teamA = players.filter((player) => player.team === 0).length;
+  const teamB = players.filter((player) => player.team === 1).length;
+
+  if (countText) countText.textContent = `A ${teamA}/3 - B ${teamB}/3`;
+  if (shuffleButton) shuffleButton.disabled = !isHost || players.length < 2;
 }
 
 export async function updateRoomMap(mapId) {
@@ -136,7 +185,41 @@ export async function updateRoomMap(mapId) {
     body: JSON.stringify({ mapId })
   });
   state.mapId = state.currentRoom.mapId || mapId;
+  state.gameDurationSeconds = state.currentRoom.gameDurationSeconds || state.gameDurationSeconds || 180;
   syncRoomSettingsControls(previousMapId);
+}
+
+export async function updateGameDuration(gameDurationSeconds) {
+  if (!state.currentRoom) return;
+  const previousMapId = state.mapId;
+  state.currentRoom = await api(`/api/rooms/${state.currentRoom.roomId}/settings`, {
+    method: 'PATCH',
+    body: JSON.stringify({ gameDurationSeconds })
+  });
+  state.gameDurationSeconds = state.currentRoom.gameDurationSeconds || gameDurationSeconds;
+  syncRoomSettingsControls(previousMapId);
+}
+
+export async function updateGameMode(gameMode) {
+  if (!state.currentRoom) return;
+  const previousMapId = state.mapId;
+  state.currentRoom = await api(`/api/rooms/${state.currentRoom.roomId}/settings`, {
+    method: 'PATCH',
+    body: JSON.stringify({ gameMode })
+  });
+  state.gameMode = state.currentRoom.gameMode || gameMode;
+  syncRoomSettingsControls(previousMapId);
+  renderPlayerSlots();
+}
+
+export async function shuffleTeams() {
+  if (!state.currentRoom) return;
+  state.currentRoom = await api(`/api/rooms/${state.currentRoom.roomId}/team`, {
+    method: 'PATCH',
+    body: JSON.stringify({})
+  });
+  renderPlayerSlots();
+  syncRoomSettingsControls();
 }
 
 export async function createRoom() {
@@ -152,6 +235,7 @@ export async function createRoom() {
   });
   await loadRooms();
   await loadRoom(room.roomId);
+  refreshNavigationState();
   showView('roomView');
 }
 
@@ -164,6 +248,7 @@ export async function joinByCode() {
     body: JSON.stringify({ roomCode })
   });
   await loadRoom(joined.roomId);
+  refreshNavigationState();
   showView('roomView');
 }
 
@@ -181,7 +266,7 @@ export async function startGame() {
   state.currentRoom = await api(`/api/rooms/${state.currentRoom.roomId}/start`, { method: 'POST' });
   stopRoomRefresh();
   showView('gameView');
-  startGameSession(state.currentRoom.roomId);
+  await startGameSession(state.currentRoom.roomId);
   schedulePreviewBoardDraw();
 }
 
@@ -193,7 +278,9 @@ export async function leaveCurrentRoom() {
     state.currentRoom = null;
     state.gameState = null;
     state.ready = false;
+    forgetRoom();
     await loadRooms({ silent: true });
+    refreshNavigationState();
     showView('lobbyView');
     return;
   }
@@ -206,7 +293,9 @@ export async function leaveCurrentRoom() {
     state.currentRoom = null;
     state.gameState = null;
     state.ready = false;
+    forgetRoom();
     await loadRooms({ silent: true });
+    refreshNavigationState();
     showView('lobbyView');
   }
 }
@@ -228,6 +317,15 @@ export function bindRoomActions() {
   });
   document.querySelector('#btnStartGame')?.addEventListener('click', async () => {
     try { await startGame(); } catch (err) { showError(err); }
+  });
+  document.querySelector('#gameDurationSelect')?.addEventListener('change', async (event) => {
+    try { await updateGameDuration(Number(event.target.value)); } catch (err) { showError(err); }
+  });
+  document.querySelector('#gameModeSelect')?.addEventListener('change', async (event) => {
+    try { await updateGameMode(event.target.value); } catch (err) { showError(err); }
+  });
+  document.querySelector('#btnShuffleTeams')?.addEventListener('click', async () => {
+    try { await shuffleTeams(); } catch (err) { showError(err); }
   });
   document.querySelectorAll('[data-leave-room]').forEach((button) => {
     button.addEventListener('click', async (event) => {

@@ -6,9 +6,20 @@ import { maps } from '../data/maps.js';
 export const images = {};
 const playerDirCache = new Map();
 const playerLastPosition = new Map();
+const bombKickAnimations = new Map();
+const completedBombKickAnimations = new Set();
+const scaledImageCache = new Map();
+const pendingScaledImages = new Set();
+const decodedImages = new WeakSet();
+let preloadPromise = null;
+let lastPreparedTileSize = 0;
 let pendingImageRedraw = false;
 let pendingBoardFrame = false;
 let liveLayerCache = null;
+let lastItemSlotsKey = '';
+let lastTimerText = '';
+const BOMB_KICK_ANIM_MS = 220;
+const BOMB_BREATHE_PERIOD_MS = 700;
 
 window.addEventListener('resize', () => {
   if (state.currentView === 'gameView') schedulePreviewBoardDraw();
@@ -41,6 +52,30 @@ function loadImage(key, src) {
   img.onload = scheduleImageRedraw;
   images[key] = img;
   return img;
+}
+
+function decodeImage(img) {
+  if (!img || decodedImages.has(img)) return Promise.resolve();
+  const markDecoded = () => {
+    decodedImages.add(img);
+  };
+
+  if (img.complete && img.naturalWidth > 0) {
+    markDecoded();
+    return Promise.resolve();
+  }
+
+  if (typeof img.decode === 'function') {
+    return img.decode().then(markDecoded).catch(() => {});
+  }
+
+  return new Promise((resolve) => {
+    img.addEventListener('load', () => {
+      markDecoded();
+      resolve();
+    }, { once: true });
+    img.addEventListener('error', resolve, { once: true });
+  });
 }
 
 function isSpawnSafe(map, x, y) {
@@ -148,7 +183,25 @@ function renderItemSlots() {
 
   const player = currentPlayer();
   const inventory = player?.inventory || [];
+  const shieldActive = !!(player?.shieldUntilTick && player.shieldUntilTick > (state.gameState?.tick || 0));
+  const slotsKey = `${player?.userId || 'none'}|${inventory.join(',')}|${player?.hasGlove ? 1 : 0}|${shieldActive ? 1 : 0}`;
+  if (slotsKey === lastItemSlotsKey) return;
+  lastItemSlotsKey = slotsKey;
+
   const keys = ['Z', 'X', 'C', 'V', 'B'];
+  const gloveSlot = player?.hasGlove ? `
+    <div class="item-slot filled passive" title="Glove">
+      <span>G</span>
+      <img src="${images.itemGlove?.src || ''}" alt="Glove" />
+    </div>
+  ` : '';
+  const shieldSlot = shieldActive ? `
+    <div class="item-slot filled active-shield" title="Shield active">
+      <span>S</span>
+      <img src="${images.itemShield?.src || ''}" alt="Shield" />
+    </div>
+  ` : '';
+
   slots.innerHTML = keys.map((key, index) => {
     const item = inventory[index] || null;
     const img = item ? itemImage(item) : null;
@@ -158,7 +211,7 @@ function renderItemSlots() {
         ${img?.src ? `<img src="${img.src}" alt="${item}" />` : '<div class="item-slot__empty"></div>'}
       </div>
     `;
-  }).join('');
+  }).join('') + gloveSlot + shieldSlot;
 }
 
 function playerColorBySlot(slotNo) {
@@ -166,17 +219,22 @@ function playerColorBySlot(slotNo) {
 }
 
 export function preloadGameSprites() {
-  for (const color of ['blue', 'green', 'red', 'yellow', 'purple', 'white']) {
-    loadImage(`${color}PlayerPanic`, `/assets/images/characters/${color}/panic.png`);
-    for (const frame of ['default', '1', '2']) {
-      loadImage(`${color}PlayerFront${frame}`, `/assets/images/characters/${color}/front/${frame}.png`);
-      loadImage(`${color}PlayerBack${frame}`, `/assets/images/characters/${color}/back/${frame}.png`);
+  if (preloadPromise) return preloadPromise;
+  preloadPromise = (async () => {
+    for (const color of ['blue', 'green', 'red', 'yellow', 'purple', 'white']) {
+      loadImage(`${color}PlayerPanic`, `/assets/images/characters/${color}/panic.png`);
+      for (const frame of ['default', '1', '2']) {
+        loadImage(`${color}PlayerFront${frame}`, `/assets/images/characters/${color}/front/${frame}.png`);
+        loadImage(`${color}PlayerBack${frame}`, `/assets/images/characters/${color}/back/${frame}.png`);
+      }
+      for (const frame of ['default', '1', '2']) {
+        loadImage(`${color}PlayerLeft${frame}`, `/assets/images/characters/${color}/side/left_${frame}.png`);
+        loadImage(`${color}PlayerRight${frame}`, `/assets/images/characters/${color}/side/right_${frame}.png`);
+      }
     }
-    for (const frame of ['default', '1', '2']) {
-      loadImage(`${color}PlayerLeft${frame}`, `/assets/images/characters/${color}/side/left_${frame}.png`);
-      loadImage(`${color}PlayerRight${frame}`, `/assets/images/characters/${color}/side/right_${frame}.png`);
-    }
-  }
+    await Promise.all(Object.values(images).map(decodeImage));
+  })();
+  return preloadPromise;
 }
 
 function playerSpriteImage(color, direction, moving, trapped) {
@@ -241,15 +299,135 @@ function drawImageIfReady(ctx, img, x, y, w, h) {
   if (img?.complete) ctx.drawImage(img, x, y, w, h);
 }
 
+function bombPhaseOffset(id) {
+  const text = String(id ?? 'bomb');
+  let hash = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+  }
+  return hash % BOMB_BREATHE_PERIOD_MS;
+}
+
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function drawScaledImage(ctx, img, cacheKey, x, y, w, h) {
+  if (!img?.complete) return;
+  const width = Math.max(1, Math.round(w));
+  const height = Math.max(1, Math.round(h));
+  const key = `${cacheKey}|${width}x${height}`;
+  let cached = scaledImageCache.get(key);
+  if (cached) {
+    ctx.drawImage(cached, x, y, w, h);
+    return;
+  }
+
+  scheduleScaledImage(img, key, width, height);
+  ctx.drawImage(img, x, y, w, h);
+}
+
+function createScaledImage(img, width, height) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const cacheCtx = canvas.getContext('2d');
+  cacheCtx.imageSmoothingEnabled = true;
+  cacheCtx.drawImage(img, 0, 0, width, height);
+  return canvas;
+}
+
+function warmScaledImage(img, cacheKey, w, h) {
+  if (!img?.complete) return;
+  const width = Math.max(1, Math.round(w));
+  const height = Math.max(1, Math.round(h));
+  const key = `${cacheKey}|${width}x${height}`;
+  if (!scaledImageCache.has(key)) {
+    scaledImageCache.set(key, createScaledImage(img, width, height));
+  }
+}
+
+function scheduleScaledImage(img, key, width, height) {
+  if (pendingScaledImages.has(key) || scaledImageCache.has(key)) return;
+  pendingScaledImages.add(key);
+
+  const run = () => {
+    try {
+      scaledImageCache.set(key, createScaledImage(img, width, height));
+    } finally {
+      pendingScaledImages.delete(key);
+      liveLayerCache = null;
+      if (state.currentView === 'gameView') schedulePreviewBoardDraw();
+    }
+  };
+
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(run, { timeout: 80 });
+  } else {
+    setTimeout(run, 0);
+  }
+}
+
+export async function prepareGameRenderAssets() {
+  await preloadGameSprites();
+
+  const canvas = document.querySelector('#previewCanvas');
+  const map = maps[state.mapId] || maps.map1;
+  if (!canvas || !map) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const width = Math.max(320, Math.floor(rect.width || canvas.clientWidth || 0));
+  const height = Math.max(240, Math.floor(rect.height || canvas.clientHeight || 0));
+  const tileSize = Math.floor(Math.min(width / map.width, height / map.height));
+  if (!tileSize || tileSize === lastPreparedTileSize) return;
+  lastPreparedTileSize = tileSize;
+
+  const balloonPad = tileSize * BALLOON_PAD;
+  const balloonSize = tileSize - balloonPad * 2;
+  const splashShort = tileSize * (28 / 40);
+  const spriteSize = tileSize * SPRITE_SCALE * 2;
+
+  warmScaledImage(images.softBlock, `block:${images.softBlock?.src || 'soft'}`, tileSize, tileSize);
+  for (const img of [images.waterball, images.waterball_green, images.waterball_red, images.waterball_yellow]) {
+    warmScaledImage(img, `bomb:${img?.src || 'waterball'}`, balloonSize, balloonSize);
+  }
+  warmScaledImage(images.splashCenter, `splash:${images.splashCenter?.src || 'center'}`, tileSize, tileSize);
+  warmScaledImage(images.splashHorizontal, `splash:${images.splashHorizontal?.src || 'horizontal'}`, tileSize, splashShort);
+  warmScaledImage(images.splashVertical, `splash:${images.splashVertical?.src || 'vertical'}`, splashShort, tileSize);
+
+  for (const color of ['blue', 'green', 'red', 'yellow', 'purple', 'white']) {
+    for (const key of [
+      `${color}PlayerPanic`,
+      `${color}PlayerFrontdefault`,
+      `${color}PlayerFront1`,
+      `${color}PlayerFront2`,
+      `${color}PlayerBackdefault`,
+      `${color}PlayerBack1`,
+      `${color}PlayerBack2`,
+      `${color}PlayerLeftdefault`,
+      `${color}PlayerLeft1`,
+      `${color}PlayerLeft2`,
+      `${color}PlayerRightdefault`,
+      `${color}PlayerRight1`,
+      `${color}PlayerRight2`
+    ]) {
+      const img = images[key];
+      warmScaledImage(img, `player:${img?.src || key}`, spriteSize, spriteSize);
+    }
+  }
+}
+
 function liveLayerKey(map, tileSize) {
   const blocks = state.gameState.blocks || [];
   let solidCount = 0;
   let softCount = 0;
+  let positionHash = 0;
   for (const block of blocks) {
     if (block.destructible) softCount += 1;
     else solidCount += 1;
+    positionHash = (positionHash + (block.x + 1) * 31 + (block.y + 1) * 997 + (block.destructible ? 7 : 13)) % 1000003;
   }
-  return `${state.gameState.mapId || state.mapId}|${map.width}x${map.height}|${tileSize}|${solidCount}|${softCount}`;
+  return `${state.gameState.mapId || state.mapId}|${map.width}x${map.height}|${tileSize}|${solidCount}|${softCount}|${positionHash}`;
 }
 
 function drawLiveStaticLayer(ctx, map, tileSize) {
@@ -263,7 +441,7 @@ function drawLiveStaticLayer(ctx, map, tileSize) {
 
     for (const block of state.gameState.blocks || []) {
       if (block.destructible) {
-        drawImageIfReady(layerCtx, images.softBlock, block.x * tileSize, block.y * tileSize, tileSize, tileSize);
+        drawScaledImage(layerCtx, images.softBlock, `block:${images.softBlock?.src || 'soft'}`, block.x * tileSize, block.y * tileSize, tileSize, tileSize);
       } else {
         drawSolidWall(layerCtx, block.x, block.y, tileSize);
       }
@@ -281,6 +459,62 @@ function livePlayers() {
   return players
     .filter((player) => !player.left && !player.disconnected)
     .sort((a, b) => (a.slotNo || 0) - (b.slotNo || 0));
+}
+
+function displayBombPosition(bomb) {
+  const fromX = bomb.kickFromX;
+  const fromY = bomb.kickFromY;
+  const startedTick = bomb.kickStartedTick;
+  if (fromX === undefined || fromY === undefined || startedTick === undefined) {
+    return { x: bomb.x, y: bomb.y };
+  }
+
+  const animKey = `${bomb.id}|${fromX},${fromY}|${bomb.x},${bomb.y}|${startedTick}`;
+  if (completedBombKickAnimations.has(animKey)) return { x: bomb.x, y: bomb.y };
+
+  let anim = bombKickAnimations.get(bomb.id);
+  if (!anim || anim.key !== animKey) {
+    anim = {
+      key: animKey,
+      fromX,
+      fromY,
+      toX: bomb.x,
+      toY: bomb.y,
+      startTime: performance.now()
+    };
+    bombKickAnimations.set(bomb.id, anim);
+  }
+
+  const progress = Math.min(1, (performance.now() - anim.startTime) / BOMB_KICK_ANIM_MS);
+  if (progress >= 1) {
+    bombKickAnimations.delete(bomb.id);
+    completedBombKickAnimations.add(animKey);
+    return { x: bomb.x, y: bomb.y };
+  }
+
+  schedulePreviewBoardDraw();
+  const ease = easeOutCubic(progress);
+  return {
+    x: anim.fromX + (anim.toX - anim.fromX) * ease,
+    y: anim.fromY + (anim.toY - anim.fromY) * ease
+  };
+}
+
+function drawBouncyBomb(ctx, img, cacheKey, bombId, x, y, size) {
+  const now = performance.now();
+  const breatheT = ((now + bombPhaseOffset(bombId)) % BOMB_BREATHE_PERIOD_MS) / BOMB_BREATHE_PERIOD_MS;
+  const factor = (1 - Math.cos(breatheT * Math.PI * 2)) / 2;
+  const scaleX = 1 + factor * 0.18;
+  const scaleY = 1 - factor * 0.18;
+  const pivotX = x + size * 0.5;
+  const pivotY = y + size * 0.9;
+
+  ctx.save();
+  ctx.translate(pivotX, pivotY);
+  ctx.scale(scaleX, scaleY);
+  ctx.translate(-pivotX, -pivotY);
+  drawScaledImage(ctx, img, cacheKey, x, y, size, size);
+  ctx.restore();
 }
 
 function drawLiveBoard(ctx, map, tileSize) {
@@ -306,7 +540,11 @@ function drawLiveBoard(ctx, map, tileSize) {
   for (const bomb of state.gameState.bombs || []) {
     const owner = playersById.get(bomb.ownerUserId);
     const img = waterballs[Math.max(0, (owner?.slotNo || 1) - 1) % waterballs.length];
-    drawImageIfReady(ctx, img, bomb.x * tileSize + balloonPad, bomb.y * tileSize + balloonPad, balloonSize, balloonSize);
+    const pos = displayBombPosition(bomb);
+    drawBouncyBomb(ctx, img, `bomb:${img?.src || 'waterball'}`, bomb.id, pos.x * tileSize + balloonPad, pos.y * tileSize + balloonPad, balloonSize);
+  }
+  if (state.currentView === 'gameView' && state.gameState.bombs?.length) {
+    schedulePreviewBoardDraw();
   }
 
   const short = tileSize * (28 / 40);
@@ -314,13 +552,13 @@ function drawLiveBoard(ctx, map, tileSize) {
     const originX = explosion.originX ?? explosion.x;
     const originY = explosion.originY ?? explosion.y;
     const tiles = explosion.tiles || [{ x: originX, y: originY }];
-    drawImageIfReady(ctx, images.splashCenter, originX * tileSize, originY * tileSize, tileSize, tileSize);
+    drawScaledImage(ctx, images.splashCenter, `splash:${images.splashCenter?.src || 'center'}`, originX * tileSize, originY * tileSize, tileSize, tileSize);
     for (const tile of tiles) {
       if (tile.x === originX && tile.y === originY) continue;
       if (tile.y === originY) {
-        drawImageIfReady(ctx, images.splashHorizontal, tile.x * tileSize, tile.y * tileSize + (tileSize - short) / 2, tileSize, short);
+        drawScaledImage(ctx, images.splashHorizontal, `splash:${images.splashHorizontal?.src || 'horizontal'}`, tile.x * tileSize, tile.y * tileSize + (tileSize - short) / 2, tileSize, short);
       } else {
-        drawImageIfReady(ctx, images.splashVertical, tile.x * tileSize + (tileSize - short) / 2, tile.y * tileSize, short, tileSize);
+        drawScaledImage(ctx, images.splashVertical, `splash:${images.splashVertical?.src || 'vertical'}`, tile.x * tileSize + (tileSize - short) / 2, tile.y * tileSize, short, tileSize);
       }
     }
   }
@@ -335,7 +573,7 @@ function drawLiveBoard(ctx, map, tileSize) {
     const dead = player.state === 'Dead' || player.isAlive === false || player.disconnected || player.left;
     const img = playerSpriteImage(color, direction, moving, trapped) || images[`${color}PlayerFrontdefault`] || images.bluePlayer;
     ctx.globalAlpha = dead ? 0.45 : 1;
-    drawImageIfReady(ctx, img, cx - tileSize * SPRITE_SCALE, cy - tileSize * SPRITE_SCALE + tileSize * CHAR_OFFSET_Y, spriteSize, spriteSize);
+    drawScaledImage(ctx, img, `player:${img?.src || color}`, cx - tileSize * SPRITE_SCALE, cy - tileSize * SPRITE_SCALE + tileSize * CHAR_OFFSET_Y, spriteSize, spriteSize);
     ctx.globalAlpha = 1;
     if (trapped) {
       ctx.strokeStyle = 'rgba(100, 220, 255, 0.85)';
@@ -345,6 +583,13 @@ function drawLiveBoard(ctx, map, tileSize) {
       ctx.arc(cx, cy, tileSize * 0.46, 0, Math.PI * 2);
       ctx.stroke();
       ctx.setLineDash([]);
+    }
+    if (!dead && player.shieldUntilTick && player.shieldUntilTick > (state.gameState.tick || 0)) {
+      ctx.strokeStyle = 'rgba(255, 210, 50, 0.85)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(cx, cy, tileSize * 0.6, 0, Math.PI * 2);
+      ctx.stroke();
     }
 
     ctx.font = `bold ${Math.max(10, tileSize * 0.2)}px Segoe UI, sans-serif`;
@@ -394,11 +639,16 @@ export function drawPreviewBoard() {
   if (state.currentView === 'gameView' && state.gameState) {
     drawLiveBoard(ctx, map, tileSize);
     ctx.restore();
-    const remaining = Math.max(0, 180 - Math.floor((state.gameState.tick || 0) / 60));
+    const duration = state.gameState.gameDurationSeconds || state.gameDurationSeconds || 180;
+    const remaining = Math.max(0, duration - Math.floor((state.gameState.tick || 0) / 60));
     const minutes = Math.floor(remaining / 60);
     const seconds = String(remaining % 60).padStart(2, '0');
     const timer = document.querySelector('#gameTimer');
-    if (timer) timer.textContent = `${minutes}:${seconds}`;
+    const timerText = `${minutes}:${seconds}`;
+    if (timer && timerText !== lastTimerText) {
+      timer.textContent = timerText;
+      lastTimerText = timerText;
+    }
     renderItemSlots();
     return;
   }
@@ -424,7 +674,7 @@ export function drawPreviewBoard() {
   const balloonPad = tileSize * BALLOON_PAD;
   for (const b of layout.balloons) {
     const size = tileSize - balloonPad * 2;
-    drawImageIfReady(ctx, b.img, b.x * tileSize + balloonPad, b.y * tileSize + balloonPad, size, size);
+    drawBouncyBomb(ctx, b.img, `preview-bomb:${b.img?.src || 'waterball'}`, `${b.x},${b.y}`, b.x * tileSize + balloonPad, b.y * tileSize + balloonPad, size);
   }
 
   const origin = layout.explosionTiles[0];

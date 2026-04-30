@@ -5,7 +5,7 @@
     <base href="/" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; connect-src 'self' http://localhost:8080 ws://localhost:8080; img-src 'self' data: https://*.googleusercontent.com; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-src 'self'; media-src 'self';"
+      content="default-src 'self'; connect-src 'self' http://localhost:8080 ws://localhost:8080 https: wss:; img-src 'self' data: https://*.googleusercontent.com; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-src 'self'; media-src 'self';"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LAN Bomber</title>
@@ -27,8 +27,8 @@
           <button class="step locked" data-target="profileView" disabled>Profile</button>
           <button class="step locked" data-target="codeView" disabled>Friend Code</button>
           <button class="step locked" data-target="lobbyView" disabled>Lobby</button>
+          <button class="step locked" data-target="rankingsView" disabled>Rankings</button>
           <button class="step locked" data-target="roomView" disabled>Room</button>
-          <button class="step locked" data-target="gameView" disabled>Game</button>
         </nav>
 
         <div class="network-card">
@@ -117,6 +117,24 @@
           </div>
         </section>
 
+        <section class="view" id="rankingsView">
+          <div class="rankings-layout">
+            <div class="rankings-toolbar">
+              <div class="ranking-tabs" id="rankingTabs" aria-label="Ranking types">
+                <button class="ranking-tab active" type="button" data-ranking-type="all_time">All Time</button>
+                <button class="ranking-tab" type="button" data-ranking-type="weekly">Weekly</button>
+                <button class="ranking-tab" type="button" data-ranking-type="monthly">Monthly</button>
+                <button class="ranking-tab" type="button" data-ranking-type="wins">Wins</button>
+                <button class="ranking-tab" type="button" data-ranking-type="win_rate">Win Rate</button>
+                <button class="ranking-tab" type="button" data-ranking-type="games">Games</button>
+              </div>
+              <button class="btn" id="btnRefreshRankings" type="button">Refresh</button>
+            </div>
+            <div class="my-rank-card" id="myRankCard"></div>
+            <div class="ranking-table" id="rankingTable"></div>
+          </div>
+        </section>
+
         <section class="view" id="roomView">
           <div class="room-header">
             <div>
@@ -131,14 +149,33 @@
             <aside class="room-settings">
               <label>
                 Mode
-                <select>
-                  <option>FFA</option>
-                  <option>TEAM 3v3</option>
+                <select id="gameModeSelect">
+                  <option value="FFA">FFA</option>
+                  <option value="TEAM">TEAM 3v3</option>
                 </select>
               </label>
+              <div class="team-actions hidden" id="teamActions">
+                <button class="btn" id="btnShuffleTeams" type="button">Random teams</button>
+                <span id="teamCountText">A 0/3 · B 0/3</span>
+              </div>
               <label>
                 Map
                 <select data-map-select></select>
+              </label>
+              <label>
+                Time
+                <select id="gameDurationSelect">
+                  <option value="30">0:30</option>
+                  <option value="60">1:00</option>
+                  <option value="90">1:30</option>
+                  <option value="120">2:00</option>
+                  <option value="150">2:30</option>
+                  <option value="180" selected>3:00</option>
+                  <option value="210">3:30</option>
+                  <option value="240">4:00</option>
+                  <option value="270">4:30</option>
+                  <option value="300">5:00</option>
+                </select>
               </label>
               <label class="ready-row">
                 <input type="checkbox" id="readyToggle" />
@@ -176,6 +213,7 @@
       </svg>
     </div>
 
+    <script src="/env.js"></script>
     <script type="module" src="/renderer/index.js"></script>
   </body>
 </html>

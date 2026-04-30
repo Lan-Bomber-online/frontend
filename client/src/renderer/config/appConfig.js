@@ -12,6 +12,7 @@ export const titles = {
   profileView: { title: 'Profile', subtitle: 'Choose your nickname and character color.', status: 'profile_required' },
   codeView: { title: 'Invite Code', subtitle: 'Verify your invite code to unlock the lobby.', status: 'access_code_required' },
   lobbyView: { title: 'Lobby', subtitle: 'Create a room or join an existing same Wi-Fi room.', status: 'approved' },
+  rankingsView: { title: 'Rankings', subtitle: 'Compare scores, wins, win rate, and match volume.', status: 'approved' },
   roomView: { title: 'Room', subtitle: 'Up to 6 players can ready up before the host starts.', status: 'approved' },
   gameView: { title: 'Game', subtitle: 'Map, item, block, balloon, and effect preview based on the original renderer.', status: 'playing' }
 };

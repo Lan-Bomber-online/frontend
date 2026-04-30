@@ -3,6 +3,8 @@ export const state = {
   user: null,
   rooms: [],
   currentRoom: null,
+  gameMode: 'FFA',
+  gameDurationSeconds: 180,
   ready: false,
   currentView: 'authView',
   gameSocket: null,

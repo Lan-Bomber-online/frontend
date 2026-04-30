@@ -39,7 +39,7 @@ function onKeyDown(event) {
     return;
   }
 
-  if (event.code === 'Space') {
+  if (event.code === 'Space' && !event.repeat) {
     placeQueued = true;
     event.preventDefault();
   }
@@ -52,7 +52,7 @@ function onKeyDown(event) {
     KeyB: 4
   }[event.code];
   if (itemSlot !== undefined) {
-    itemSlotQueued = itemSlot;
+    if (!event.repeat) itemSlotQueued = itemSlot;
     event.preventDefault();
   }
 }

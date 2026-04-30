@@ -46,6 +46,9 @@ client/serve.err.log
 !.env.*.example
 *.local
 
+# Deployment state
+.vercel/
+
 # IDE and editor
 .vscode/
 .idea/
