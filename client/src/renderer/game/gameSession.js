@@ -2,7 +2,7 @@ import { WS_BASE } from '../config/appConfig.js';
 import { state } from '../core/state.js';
 import { beginPageLoading, endPageLoading } from '../ui/loading.js';
 import { showError } from '../ui/status.js';
-import { drawPreviewBoard } from './previewBoard.js';
+import { preloadGameSprites, schedulePreviewBoardDraw } from './previewBoard.js';
 import { bindGameInput, consumeItemSlotQueued, consumePlaceQueued, getInputKeys, unbindGameInput } from './inputController.js';
 
 let inputTimer = null;
@@ -53,6 +53,7 @@ export function startGameSession(roomId) {
   state.gameStarted = true;
   waitingForFirstState = true;
   beginPageLoading('Loading game');
+  preloadGameSprites();
 
   const socket = new WebSocket(`${WS_BASE}/ws/rooms/${roomId}`);
   state.gameSocket = socket;
@@ -67,7 +68,7 @@ export function startGameSession(roomId) {
       if (message.type === 'game_state' || message.type === 'room_state') {
         state.gameState = message.state;
         if (message.state?.mapId) state.mapId = message.state.mapId;
-        drawPreviewBoard();
+        schedulePreviewBoardDraw();
         if (waitingForFirstState) {
           waitingForFirstState = false;
           endPageLoading(180);

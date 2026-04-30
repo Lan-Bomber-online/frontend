@@ -1,7 +1,7 @@
 import { api } from '../api/client.js';
 import { state } from '../core/state.js';
 import { startGameSession, stopGameSession } from '../game/gameSession.js';
-import { drawPreviewBoard } from '../game/previewBoard.js';
+import { drawPreviewBoard, schedulePreviewBoardDraw } from '../game/previewBoard.js';
 import { showView } from '../ui/navigation.js';
 import { showError } from '../ui/status.js';
 import { renderPlayerSlots } from './roomSlots.js';
@@ -114,7 +114,7 @@ export async function loadRoom(roomId, options = {}) {
     stopRoomRefresh();
     showView('gameView');
     startGameSession(state.currentRoom.roomId);
-    drawPreviewBoard();
+    schedulePreviewBoardDraw();
   }
 }
 
@@ -124,7 +124,8 @@ function syncRoomSettingsControls(previousMapId = state.mapId) {
     select.value = state.mapId;
     select.disabled = state.currentView === 'roomView' && !isHost;
   });
-  if (state.currentView === 'gameView' || previousMapId !== state.mapId) drawPreviewBoard();
+  if (state.currentView === 'gameView') schedulePreviewBoardDraw();
+  else if (previousMapId !== state.mapId) drawPreviewBoard();
 }
 
 export async function updateRoomMap(mapId) {
@@ -181,7 +182,7 @@ export async function startGame() {
   stopRoomRefresh();
   showView('gameView');
   startGameSession(state.currentRoom.roomId);
-  drawPreviewBoard();
+  schedulePreviewBoardDraw();
 }
 
 export async function leaveCurrentRoom() {

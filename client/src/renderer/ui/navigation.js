@@ -1,7 +1,7 @@
 import { titles } from '../config/appConfig.js';
 import { $, optional } from '../core/dom.js';
 import { accessStatus, state } from '../core/state.js';
-import { drawPreviewBoard } from '../game/previewBoard.js';
+import { schedulePreviewBoardDraw } from '../game/previewBoard.js';
 import { stopGameSession } from '../game/gameSession.js';
 
 export function showView(viewId) {
@@ -13,6 +13,7 @@ export function showView(viewId) {
   }
 
   state.currentView = viewId;
+  document.body.classList.toggle('is-game-view', viewId === 'gameView');
   document.querySelectorAll('.view').forEach((view) => view.classList.toggle('active', view.id === viewId));
   document.querySelectorAll('.step').forEach((step) => step.classList.toggle('active', step.dataset.target === viewId));
 
@@ -20,7 +21,7 @@ export function showView(viewId) {
   $('#pageTitle').textContent = meta.title;
   $('#pageSubtitle').textContent = meta.subtitle;
   $('#statusPill').textContent = meta.status;
-  if (viewId === 'gameView') drawPreviewBoard();
+  if (viewId === 'gameView') schedulePreviewBoardDraw();
 }
 
 export function guardView(viewId) {

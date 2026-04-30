@@ -152,27 +152,8 @@
         <section class="view" id="gameView">
           <div class="game-frame">
             <div class="game-hud">
-              <strong id="gameMapLabel">FFA · Classic Grid</strong>
-              <span id="gameTimer">03:00</span>
-              <button class="btn danger" data-leave-room type="button">Leave</button>
-            </div>
-            <div class="asset-dock" aria-label="Game assets">
-              <div>
-                <img src="/assets/images/blocks/softblock.svg" alt="soft block" />
-                <span>Soft Block</span>
-              </div>
-              <div>
-                <img src="/assets/images/waterball/waterball.png" alt="water balloon" />
-                <span>Water Balloon</span>
-              </div>
-              <div>
-                <img src="/assets/images/item/item_power.svg" alt="power item" />
-                <span>Power Item</span>
-              </div>
-              <div>
-                <img src="/assets/action/explode_effects/splash_center.svg" alt="splash effect" />
-                <span>Splash Effect</span>
-              </div>
+              <span class="game-timer" id="gameTimer">03:00</span>
+              <div class="item-slots" id="gameItemSlots" aria-label="Item slots"></div>
             </div>
             <canvas id="previewCanvas" width="960" height="640"></canvas>
           </div>

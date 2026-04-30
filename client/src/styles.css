@@ -24,6 +24,10 @@ body {
   font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+body.is-game-view {
+  overflow: hidden;
+}
+
 button,
 input,
 select {
@@ -38,6 +42,26 @@ button {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
   min-height: 100vh;
+}
+
+body.is-game-view .app-shell {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.is-game-view .sidebar,
+body.is-game-view .topbar {
+  display: none;
+}
+
+body.is-game-view .content {
+  width: 100vw;
+  height: 100vh;
+  padding: 0;
+  overflow: hidden;
 }
 
 .sidebar {
@@ -622,6 +646,91 @@ select:focus {
   border-bottom: 1px solid var(--line);
 }
 
+body.is-game-view #gameView,
+body.is-game-view #gameView.active {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+body.is-game-view .game-frame {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  border: 0;
+  border-radius: 0;
+  background: #050b14;
+  display: grid;
+  grid-template-rows: 1fr;
+}
+
+body.is-game-view .game-hud {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 5;
+  height: 58px;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+  background: linear-gradient(180deg, rgba(5, 11, 20, 0.92), rgba(5, 11, 20, 0.58));
+  backdrop-filter: blur(8px);
+}
+
+.game-timer {
+  min-width: 72px;
+  font-size: 24px;
+  font-weight: 800;
+  color: #eef4fb;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.75);
+}
+
+.item-slots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.item-slot {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 8px;
+  background: rgba(8, 15, 27, 0.9);
+  display: grid;
+  place-items: center;
+}
+
+.item-slot.filled {
+  border-color: rgba(96, 165, 250, 0.75);
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.24) inset;
+}
+
+.item-slot span {
+  position: absolute;
+  left: 4px;
+  top: 2px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #bfdbfe;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.item-slot img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.item-slot__empty {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: rgba(100, 116, 139, 0.18);
+}
+
 .game-toolbar {
   padding: 12px 14px 0;
   background: #0f1724;
@@ -632,47 +741,16 @@ select:focus {
   margin-bottom: 0;
 }
 
-.asset-dock {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--line);
-  background: #0f1724;
-}
-
-.asset-dock div {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  border: 1px solid var(--line-soft);
-  border-radius: 8px;
-  background: #0b1320;
-  padding: 8px 10px;
-}
-
-.asset-dock img {
-  width: 34px;
-  height: 34px;
-  object-fit: contain;
-  flex: 0 0 auto;
-}
-
-.asset-dock span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--muted);
-  font-size: 13px;
-}
-
 #previewCanvas {
   display: block;
   width: 100%;
   height: auto;
   background: #07101d;
+}
+
+body.is-game-view #previewCanvas {
+  width: 100vw;
+  height: 100vh;
 }
 
 @media (max-width: 900px) {
