@@ -1,44 +1,73 @@
-# dependencies
+# Dependencies
 node_modules/
+**/node_modules/
 
-# build outputs
+# Build outputs
 dist/
+build/
+out/
 client/dist/
+client/build/
 server/dist/
 shared/dist/
 *.tsbuildinfo
 
-# logs
+# Test and coverage outputs
+coverage/
+**/coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Tool caches
+.cache/
+.parcel-cache/
+.vite/
+.vitest/
+.eslintcache
+.stylelintcache
+client/.cache/
+client/.vite/
+
+# Logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+client/serve.log
+client/serve.err.log
 
-# env files
+# Environment and local secrets
 .env
 .env.*
 !.env.example
+!.env.*.example
+*.local
 
-# IDE / editor
+# IDE and editor
 .vscode/
 .idea/
 *.swp
 *.swo
+*.swn
+*.tmp
+*.bak
 
 # OS files
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# temp/cache
-.cache/
+# Temp files
 tmp/
 temp/
+.tmp/
 
-# Claude Code
+# Local tool state
 .claude/
+.codex/
 
-# Premium character assets
-assets/images/characters/Chiikawa/
-
+# Generated notes/artifacts
 LanBomberPORTFOLIO_TECH_SUMMARY.md

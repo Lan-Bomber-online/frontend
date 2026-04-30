@@ -1,0 +1,20 @@
+export const imageSources = {
+  softBlock: '/assets/images/blocks/softblock.svg',
+  waterball: '/assets/images/waterball/waterball.png',
+  waterball_green: '/assets/images/waterball/waterball_green.png',
+  waterball_red: '/assets/images/waterball/waterball_red.png',
+  splashCenter: '/assets/action/explode_effects/splash_center.svg',
+  splashHorizontal: '/assets/action/explode_effects/splash_horizontal.svg',
+  splashVertical: '/assets/action/explode_effects/splahs_vertical.svg',
+  bluePlayer: '/assets/images/characters/blue/front/default.png',
+  greenPlayer: '/assets/images/characters/green/front/default.png',
+  redPlayer: '/assets/images/characters/red/front/default.png',
+  yellowPlayer: '/assets/images/characters/yellow/front/default.png',
+  itemSpeed: '/assets/images/item/item_speed.svg',
+  itemBalloon: '/assets/images/item/item_balloon.svg',
+  itemPower: '/assets/images/item/item_power.svg',
+  itemNeedle: '/assets/images/item/item_needle.svg',
+  itemGlove: '/assets/images/item/item_glove.svg',
+  itemShield: '/assets/images/item/item_shield.svg',
+  itemSwitch: '/assets/images/item/item_switch.svg'
+};

@@ -3,18 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
-  "main": "dist/main.js",
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "node scripts/build.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "serve": "node scripts/serve.mjs",
+    "typecheck": "node scripts/check.mjs"
   },
-  "dependencies": {
-    "@lan-bomber/shared": "file:../shared"
-  },
-  "devDependencies": {
-    "@types/node": "^22.0.0",
-    "esbuild": "^0.21.5",
-    "typescript": "^5.5.4"
-  }
+  "dependencies": {},
+  "devDependencies": {}
 }
