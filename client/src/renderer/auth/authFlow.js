@@ -86,7 +86,7 @@ async function startGoogleRedirect(mode) {
     });
 
     if (statusEl) statusEl.textContent = 'Opening Google...';
-    location.assign(`${GOOGLE_AUTH_ENDPOINT}?${params}`);
+    location.replace(`${GOOGLE_AUTH_ENDPOINT}?${params}`);
   } catch (err) {
     if (statusEl) statusEl.textContent = 'Google login is not configured.';
     showError(err);

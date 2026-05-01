@@ -22,14 +22,23 @@ export function init() {
   bindRoomActions();
 
   refreshBackendStatus({ loader: true });
-  showView('authView');
   refreshNavigationState();
 
   handleGoogleRedirect().then(async (handled) => {
-    if (handled) return;
+    if (handled) {
+      history.replaceState({ view: state.currentView }, '', '/');
+      return;
+    }
     const user = await loadMe();
     if (user) await routeAfterAccountStep();
     else showView('authView');
+    history.replaceState({ view: state.currentView }, '', '/');
+  });
+
+  window.addEventListener('popstate', async () => {
+    if (!state.user) return;
+    await routeAfterAccountStep();
+    history.replaceState({ view: state.currentView }, '', '/');
   });
 
   setInterval(refreshBackendStatus, 5000);
