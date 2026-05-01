@@ -4,12 +4,22 @@ import { skins } from '../data/skins.js';
 import { showError } from '../ui/status.js';
 import { setUser, routeAfterAccountStep } from '../auth/authFlow.js';
 
+function userSkin() {
+  const skin = state.user?.profileImageUrl || state.user?.profile_image_url;
+  return skins.includes(skin) ? skin : 'blue';
+}
+
+function selectedSkin() {
+  return document.querySelector('.skin-card.selected')?.dataset.skin || userSkin();
+}
+
 export function renderSkins() {
   const grid = document.querySelector('#skinGrid');
   if (!grid) return;
+  const activeSkin = userSkin();
 
   grid.innerHTML = skins.map((skin, index) => `
-    <button class="skin-card${index === 0 ? ' selected' : ''}" type="button" data-skin="${skin}">
+    <button class="skin-card${skin === activeSkin || (!activeSkin && index === 0) ? ' selected' : ''}" type="button" data-skin="${skin}">
       <img src="/assets/images/characters/${skin}/front/default.png" alt="${skin}" />
       <span>${skin}</span>
     </button>
@@ -34,7 +44,7 @@ export function bindProfileActions() {
 
       const user = await api('/api/users/me', {
         method: 'PATCH',
-        body: JSON.stringify({ nickname })
+        body: JSON.stringify({ nickname, skin: selectedSkin() })
       });
       setUser(user);
       await routeAfterAccountStep();

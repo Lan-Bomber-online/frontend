@@ -37,6 +37,11 @@ function playerColor(slotNo) {
   return ['blue', 'green', 'red', 'yellow', 'purple', 'white'][Math.max(0, (slotNo || 1) - 1)] || 'blue';
 }
 
+function playerSkin(entry, slotNo) {
+  const skin = entry?.skin || entry?.profileImageUrl || entry?.profile_image_url;
+  return ['blue', 'green', 'purple', 'red', 'white', 'yellow'].includes(skin) ? skin : playerColor(slotNo);
+}
+
 async function returnToRoom(message) {
   const roomId = message.roomId ?? message.room_id ?? state.currentRoom?.roomId ?? state.gameState?.roomId;
   if (!roomId) {
@@ -81,7 +86,7 @@ function showGameEndOverlay(message) {
       <div class="game-end-list">
         ${ranking.slice(0, 6).map((entry, index) => {
           const slotNo = entry.slotNo ?? entry.slot_no ?? index + 1;
-          const color = playerColor(slotNo);
+          const color = playerSkin(entry, slotNo);
           const rank = entry.rank || index + 1;
           const isMe = Number(entry.userId ?? entry.user_id) === myId;
           const medal = ['1st', '2nd', '3rd'][rank - 1] || `${rank}th`;

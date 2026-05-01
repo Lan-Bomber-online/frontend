@@ -1,6 +1,11 @@
 import { state } from '../core/state.js';
 import { skins } from '../data/skins.js';
 
+function playerSkin(player, fallbackIndex = 0) {
+  const skin = player?.profileImageUrl || player?.profile_image_url;
+  return skins.includes(skin) ? skin : skins[fallbackIndex % skins.length];
+}
+
 export function renderPlayerSlots() {
   const players = state.currentRoom?.players || [];
   const slots = document.querySelector('#playerSlots');
@@ -31,7 +36,7 @@ export function renderPlayerSlots() {
   });
 
   slots.innerHTML = slotData.map((player, index) => {
-    const skin = skins[index % skins.length];
+    const skin = playerSkin(player, index);
     if (!player) return '<div class="player-slot empty"><div class="empty-avatar"></div><strong>Empty</strong><span>Waiting</span></div>';
 
     const name = player.nickname || `Player ${player.userId}`;
@@ -51,7 +56,7 @@ function renderTeamSlots(players, team) {
     if (!player) {
       return `<div class="player-slot empty team-${team}"><div class="empty-avatar"></div><strong>Empty</strong><span>Team ${team === 0 ? 'A' : 'B'}</span></div>`;
     }
-    const skin = skins[(player.slotNo - 1) % skins.length];
+    const skin = playerSkin(player, (player.slotNo || 1) - 1);
     const name = player.nickname || `Player ${player.userId}`;
     return `
       <div class="player-slot team-${team}">

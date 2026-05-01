@@ -18,7 +18,7 @@ let pendingBoardFrame = false;
 let liveLayerCache = null;
 let lastItemSlotsKey = '';
 let lastTimerText = '';
-const BOMB_KICK_ANIM_MS = 220;
+const BOMB_KICK_ANIM_MS = 140;
 const BOMB_BREATHE_PERIOD_MS = 700;
 
 window.addEventListener('resize', () => {
@@ -218,6 +218,25 @@ function playerColorBySlot(slotNo) {
   return ['blue', 'green', 'red', 'yellow', 'purple', 'white'][Math.max(0, (slotNo || 1) - 1)] || 'blue';
 }
 
+function playerSkin(player) {
+  const skin = player?.skin || player?.profileImageUrl || player?.profile_image_url;
+  return ['blue', 'green', 'purple', 'red', 'white', 'yellow'].includes(skin)
+    ? skin
+    : playerColorBySlot(player?.slotNo);
+}
+
+function waterballImageForPlayer(player) {
+  const bySkin = {
+    blue: images.waterball,
+    green: images.waterball_green,
+    purple: images.waterball_purple,
+    red: images.waterball_red,
+    white: images.waterball_white,
+    yellow: images.waterball_yellow
+  };
+  return bySkin[playerSkin(player)] || images.waterball;
+}
+
 export function preloadGameSprites() {
   if (preloadPromise) return preloadPromise;
   preloadPromise = (async () => {
@@ -388,7 +407,14 @@ export async function prepareGameRenderAssets() {
   const spriteSize = tileSize * SPRITE_SCALE * 2;
 
   warmScaledImage(images.softBlock, `block:${images.softBlock?.src || 'soft'}`, tileSize, tileSize);
-  for (const img of [images.waterball, images.waterball_green, images.waterball_red, images.waterball_yellow]) {
+  for (const img of [
+    images.waterball,
+    images.waterball_green,
+    images.waterball_purple,
+    images.waterball_red,
+    images.waterball_white,
+    images.waterball_yellow
+  ]) {
     warmScaledImage(img, `bomb:${img?.src || 'waterball'}`, balloonSize, balloonSize);
   }
   warmScaledImage(images.splashCenter, `splash:${images.splashCenter?.src || 'center'}`, tileSize, tileSize);
@@ -536,10 +562,9 @@ function drawLiveBoard(ctx, map, tileSize) {
 
   const balloonPad = tileSize * BALLOON_PAD;
   const balloonSize = tileSize - balloonPad * 2;
-  const waterballs = [images.waterball, images.waterball_green, images.waterball_red, images.waterball_yellow];
   for (const bomb of state.gameState.bombs || []) {
     const owner = playersById.get(bomb.ownerUserId);
-    const img = waterballs[Math.max(0, (owner?.slotNo || 1) - 1) % waterballs.length];
+    const img = waterballImageForPlayer(owner);
     const pos = displayBombPosition(bomb);
     drawBouncyBomb(ctx, img, `bomb:${img?.src || 'waterball'}`, bomb.id, pos.x * tileSize + balloonPad, pos.y * tileSize + balloonPad, balloonSize);
   }
@@ -567,7 +592,7 @@ function drawLiveBoard(ctx, map, tileSize) {
   for (const player of players) {
     const cx = player.x * tileSize;
     const cy = player.y * tileSize;
-    const color = playerColorBySlot(player.slotNo);
+    const color = playerSkin(player);
     const { direction, moving } = getPlayerDirection(player);
     const trapped = player.state === 'Trapped';
     const dead = player.state === 'Dead' || player.isAlive === false || player.disconnected || player.left;
