@@ -26,6 +26,10 @@ function displayName(item) {
 }
 
 function avatar(item) {
+  const skin = item.profileImageUrl || item.profile_image_url;
+  if (['blue', 'green', 'purple', 'red', 'white', 'yellow'].includes(skin)) {
+    return `<img src="/assets/images/characters/${skin}/front/default.png" alt="" />`;
+  }
   if (item.profileImageUrl) return `<img src="${item.profileImageUrl}" alt="" />`;
   return '<div class="ranking-avatar__fallback"></div>';
 }
