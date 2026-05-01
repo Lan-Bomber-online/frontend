@@ -483,8 +483,41 @@ function livePlayers() {
   if (!source) return [];
   const players = Array.isArray(source) ? source : Object.values(source);
   return players
-    .filter((player) => !player.left && !player.disconnected)
+    .filter((player) => !player.left && !player.disconnected && player.state !== 'Dead' && player.isAlive !== false)
     .sort((a, b) => (a.slotNo || 0) - (b.slotNo || 0));
+}
+
+function teamColor(team) {
+  return Number(team) === 1
+    ? { stroke: 'rgba(248, 113, 113, 0.95)', fill: 'rgba(127, 29, 29, 0.32)', label: '#fecaca', name: '#fca5a5', text: 'B' }
+    : { stroke: 'rgba(96, 165, 250, 0.95)', fill: 'rgba(30, 64, 175, 0.32)', label: '#bfdbfe', name: '#93c5fd', text: 'A' };
+}
+
+function drawTeamMarker(ctx, player, cx, cy, tileSize) {
+  if (state.gameState?.gameMode !== 'TEAM') return;
+  const color = teamColor(player.team);
+  ctx.save();
+  ctx.fillStyle = color.fill;
+  ctx.strokeStyle = color.stroke;
+  ctx.lineWidth = Math.max(2, tileSize * 0.055);
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + tileSize * 0.27, tileSize * 0.36, tileSize * 0.17, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  const badgeSize = Math.max(14, tileSize * 0.28);
+  const bx = cx + tileSize * 0.34;
+  const by = cy - tileSize * 0.42;
+  ctx.fillStyle = color.stroke;
+  ctx.beginPath();
+  ctx.arc(bx, by, badgeSize * 0.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#06101d';
+  ctx.font = `bold ${Math.max(10, badgeSize * 0.62)}px Segoe UI, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(color.text, bx, by + 0.5);
+  ctx.restore();
 }
 
 function displayBombPosition(bomb) {
@@ -597,6 +630,7 @@ function drawLiveBoard(ctx, map, tileSize) {
     const trapped = player.state === 'Trapped';
     const dead = player.state === 'Dead' || player.isAlive === false || player.disconnected || player.left;
     const img = playerSpriteImage(color, direction, moving, trapped) || images[`${color}PlayerFrontdefault`] || images.bluePlayer;
+    drawTeamMarker(ctx, player, cx, cy, tileSize);
     ctx.globalAlpha = dead ? 0.45 : 1;
     drawScaledImage(ctx, img, `player:${img?.src || color}`, cx - tileSize * SPRITE_SCALE, cy - tileSize * SPRITE_SCALE + tileSize * CHAR_OFFSET_Y, spriteSize, spriteSize);
     ctx.globalAlpha = 1;
@@ -621,7 +655,7 @@ function drawLiveBoard(ctx, map, tileSize) {
     ctx.textAlign = 'center';
     ctx.lineWidth = 3;
     ctx.strokeStyle = 'rgba(0,0,0,0.75)';
-    ctx.fillStyle = '#eef4fb';
+    ctx.fillStyle = state.gameState?.gameMode === 'TEAM' ? teamColor(player.team).name : '#eef4fb';
     ctx.strokeText(player.nickname || `P${player.slotNo || ''}`, cx, cy - tileSize * 0.48);
     ctx.fillText(player.nickname || `P${player.slotNo || ''}`, cx, cy - tileSize * 0.48);
   }
