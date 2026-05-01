@@ -863,6 +863,8 @@ body.is-game-view .game-frame {
   position: relative;
   width: 100vw;
   height: 100vh;
+  box-sizing: border-box;
+  padding-top: 58px;
   border: 0;
   border-radius: 0;
   background: #050b14;
@@ -1045,7 +1047,7 @@ body.is-game-view .game-hud {
 
 body.is-game-view #previewCanvas {
   width: 100vw;
-  height: 100vh;
+  height: calc(100vh - 58px);
 }
 
 @media (max-width: 900px) {
