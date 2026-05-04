@@ -46,5 +46,5 @@ export function init() {
     if (state.currentView === 'lobbyView' && accessStatus() === 'approved') {
       loadRooms({ silent: true });
     }
-  }, 1000);
+  }, 3000);
 }

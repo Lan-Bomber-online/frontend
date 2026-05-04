@@ -6,7 +6,7 @@ import { refreshNavigationState, showView } from '../ui/navigation.js';
 import { showError } from '../ui/status.js';
 import { renderPlayerSlots } from './roomSlots.js';
 
-const ROOM_REFRESH_MS = 500;
+const ROOM_REFRESH_MS = 1500;
 const CURRENT_ROOM_STORAGE_KEY = 'lanBomberCurrentRoomId';
 
 let roomRefreshTimer = null;

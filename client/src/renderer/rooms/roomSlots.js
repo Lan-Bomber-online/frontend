@@ -7,7 +7,7 @@ function playerSkin(player, fallbackIndex = 0) {
 }
 
 export function renderPlayerSlots() {
-  const players = state.currentRoom?.players || [];
+  const players = [...(state.currentRoom?.players || [])].sort((a, b) => a.slotNo - b.slotNo);
   const slots = document.querySelector('#playerSlots');
   if (!slots) return;
 
@@ -30,10 +30,7 @@ export function renderPlayerSlots() {
   }
 
   slots.classList.remove('team-mode');
-  const slotData = Array.from({ length: 6 }, (_, index) => {
-    const slotNo = index + 1;
-    return players.find((p) => p.slotNo === slotNo) || null;
-  });
+  const slotData = Array.from({ length: 6 }, (_, index) => players[index] || null);
 
   slots.innerHTML = slotData.map((player, index) => {
     const skin = playerSkin(player, index);
